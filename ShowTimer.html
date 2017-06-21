@@ -1,0 +1,157 @@
+<html>
+  <head>
+    <title>Show Timer</title>
+    <meta charset="UTF-8">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Vibur|Mogra" rel="stylesheet"> -->
+    <link rel="stylesheet" href="STcommon.css" type="text/css" />
+    <link rel="stylesheet" href="ShowTimer.css" type="text/css" />
+    <link rel="icon" href="favicon.png" type="image/png" />
+  </head>
+  <body><div id="main">
+
+      <!-- main part of the screen with all the times on it -->
+
+      <table>
+	<tbody>
+	  <tr>
+
+	    <!-- local time of next break/event -->
+
+	    <td>
+	      <table id="nxtbreak" class="tdisp countdown">
+		<tr>
+		  <td data-STrole="hr">--</td>
+		  <td>:</td>
+		  <td data-STrole="min">--</td>
+		  <td>:</td>
+		  <td data-STrole="sec">--</td>
+		  <td>.</td>
+		  <td data-STrole="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">next break</div>
+	    </td>
+	  </tr>
+	  <tr>
+
+	    <!-- hours:minuts:seconds until next break or event -->
+	    
+	    <td>
+	      <table id="tilbreak" class="tdisp countdown">
+		<tr>
+		  <td data-STrole="hr">--</td>
+		  <td>:</td>
+		  <td data-STrole="min">--</td>
+		  <td>:</td>
+		  <td data-STrole="sec">--</td>
+		  <td>.</td>
+		  <td data-STrole="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">time until next break</div>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+
+	      <!-- UTC real time clock (RTC) -->
+
+	      <table id="UTC" class="mainclock tdisp wallclock">
+		<tr>
+		  <td data-STrole="hr">--</td>
+		  <td>:</td>
+		  <td data-STrole="min">--</td>
+		  <td>:</td>
+		  <td data-STrole="sec">--</td>
+		  <td>.</td>
+		  <td data-STrole="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">UTC</div>
+	    </td>
+	  <tr>
+
+	    <!-- display of local time -->
+
+	    <td>
+	      <table id="timenow" class="mainclock tdisp">
+		<tr>
+		  <td data-STrole="hr">--</td>
+		  <td>:</td>
+		  <td data-STrole="min">--</td>
+		  <td>:</td>
+		  <td data-STrole="sec">--</td>
+		  <td>.</td>
+		  <td data-STrole="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">local time</div>
+	    </td>
+	  </tr>
+	  <tr>
+
+	    <!-- display of over the air (OTA) time -->
+	    
+	    <td>
+	      <table id="OTAtime" class="mainclock tdisp">
+		<tr>
+		  <td data-STrole="hr">--</td>
+		  <td>:</td>
+		  <td data-STrole="min">--</td>
+		  <td>:</td>
+		  <td data-STrole="sec">--</td>
+		  <td>.</td>
+		  <td data-STrole="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <span class="timelabel">OTA time</span>
+	    </td>
+	  </tr>
+	</tbody>
+      </table>
+      <div id="stats">
+	<br />
+	<span>Time taken in tick handler:&nbsp;</span><span id="tickHandleTime">-</span>
+	<br />
+	<br />
+      </div>
+</div>
+    <div>debug level:&nbsp;
+	<input onchange="updDbg(dbgChanger.value);" id="dbgChanger"
+	     name="dbglvl"
+	       type="number" value="2" /><br></br>
+	timing display fudge factor:&nbsp;<input 
+				      onchange="updFudge(fudge);"
+				      name="fudgeFact" type="number"
+				      id="fudge" />
+    </div>
+    <div>generic time value:&nbsp;
+      <input type="time" name="timeval" id="genericTime" size="18" />
+    </div>
+    <div><input type="checkbox" id="showms" name="MSshow" />
+      Show milliseconds
+    </div> 
+    
+    <div>
+      <button id="stopST">STOP!</button>
+    </div>
+    <div>
+      <a href="ShowTimerBreakEdit.html">edit your breaks</a>
+    </div>
+    <script type="text/javascript" src="STcommon.js"></script>
+    <!-- <script>alert("bottom of ShowTimer.html");</script> -->
+    <script type="text/javascript" src="ShowTimer.js"></script>
+    </script>
+
+  </body>
+</html>
