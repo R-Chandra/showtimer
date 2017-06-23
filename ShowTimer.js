@@ -262,6 +262,7 @@ function begin_stop_within_tick(currTime) {
     but.removeEventListener("click", stopST, false);
     but.textContent = "Stopped.";
     chg_color(timenow, "red");
+    chg_color(tmtilbreak, "red");
     document.getElementsByTagName("body")[0].style.background = "rgb(40,0,0)";
     console.log("***+++*** Shutdown @ "+
 		currTime.toTimeString()+
