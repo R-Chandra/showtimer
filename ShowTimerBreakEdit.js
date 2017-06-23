@@ -98,95 +98,6 @@ function commit2localStorage(clickevt) {
     clear_msg_after_delay(commitmsg);
 }
 
-function secs2hm(insecs) {
-    // form a minutes:seconds string from "insecs" number of seconds
-    // this is visually nicer for break lengths than full hh:mm:ss
-    var str = "";
-    var t = insecs;
-    var secs,mins,hrs;
-
-    secs = t % 60;
-    t = Math.floor(t/60);
-    mins = t % 60;
-
-    return mins + ":" + zeropad(secs, 2);
-}
-
-
-function secs2hmsStr(insecs) {
-    // form an hours, minutes, seconds string from "insecs" number of seconds
-    var str = "";
-    var t = insecs;
-    var secs,mins,hrs;
-
-    secs = t % 60;
-    t = Math.floor(t/60);
-    mins = t % 60;
-    t = Math.floor(t/60);
-    str += zeropad(t, 2)
-    str += ":";
-    str += zeropad(mins, 2)
-    str += ":";
-    str += zeropad(secs, 2)
-
-    return str;
-}
-
-function hms2secs(str) {
-    // take string "str" which is in the format hours:minutes:seconds and
-    // convert that to a number of seconds.  Zero, one, or two colons are
-    // allowed.  Any characters other than the digits and a colon make this
-    // function return false.  Also if minutes or seconds are greater than
-    // 59 will cause a return of false.
-
-    var secs = 0;
-    var c, l, i;
-    var coloncnt = 0;
-    var val; // intermediate value while walking along the string
-    var hms = new Array(); // hours, minutes, seconds as accumulated
-
-    dbg(0, "  hms2secs(): converting "+str);
-
-    val = 0;
-    l = str.length;
-    for ( i = 0; i < l; i++ ) {
-	c = str.charAt(i);
-	dbg(0, "    considering "+c+" at "+i+" ("+val+")");
-	if ( c === ":" ) {
-	    if ( ++coloncnt > 2 ) {
-		dbg(1, "    too many colons, "+coloncnt);
-		return false;
-	    }
-	    dbg(0, "      processing colon, before "+val);
-	    hms.push(val);
-	    val = 0;
-	} else if ( c < "0" || c > "9" ) {
-	    dbg(1, "    char "+c+" not in range");
-	    return false;
-	} else {
-	    // add the next digit by shifting the result so
-	    // far by one decimal place and add current one
-	    val *= 10;
-	    val += parseInt(c);
-	}
-    }
-    hms.push(val);
-
-    while ( ++coloncnt < 3 ) {
-	hms.unshift(0);
-    }
-
-    dbg(1, "  ready with hms len "+hms.length+" and hms "+hms);
-    if ( hms[0] > 23 || hms[1] > 59 || hms[2] > 59 ) {
-	dbg(1, "    something was too big");
-	return false;
-    }
-    
-    secs = hms[0] * 3600 + hms[1] * 60 + hms[2];
-
-    return secs;
-}
-
 function find_fields(hobj) {
     var b;
 
@@ -280,7 +191,7 @@ function prepare_break_form(pgnode) {
 
     brlen = b.end - b.begin;
     pgnode.brklensecs.value = brlen;
-    pgnode.brklentime.value = secs2hm(brlen);
+    pgnode.brklentime.value = secs2minsec(brlen);
 
     // If the structure of the page changes (such as adding or
     // removing sections of the break prototype), the node where
@@ -548,7 +459,7 @@ function calc_end(evt) {
     } else {
 	len = parseInt(brkelt.brklensecs.value);
 	if ( chkBrkLen(brkelt, len) ) {
-	    brkelt.brklentime.value = secs2hm(len);
+	    brkelt.brklentime.value = secs2minsec(len);
 	} else {
 	    return false;
 	}
