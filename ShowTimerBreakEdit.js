@@ -59,12 +59,15 @@ function slurp_export_area() {
 
 function commit2localStorage(clickevt) {
 
-    // This receives the click event from the commit button
+    // This receives the click event from the "commit" button.
+    // First, back up the profile to "<name>_breaks_bak"
+    // Then JSON.stringify the brk array and put it at "<name>_breaks"
     
     var profname = profinp.value;
 
     dbg(1, "]]]]]] requesting commit to profile "+profname);
 
+    // check to see if a profile name has been entered
     if ( profname === undefined ||
 	 profname === null ||
 	 profname === "" ) {
@@ -92,7 +95,7 @@ function commit2localStorage(clickevt) {
     commitmsg.textContent = 'Profile "'+profname+'" saved to localStorage.';
     // This could have created a new profile, so update the list
     find_all_profiles();
-    window.setTimeout(clear_txt, 5000, commitmsg);
+    clear_msg_after_delay(commitmsg);
 }
 
 function secs2hm(insecs) {
@@ -391,6 +394,20 @@ function repl_brk_adding_hr(evt) {
     brkobj.brkbegin.focus();
 }
 
+function clear_msg_after_delay(txtnode) {
+
+    // Clear the message put into "txtnode" after a delay Previously,
+    // this used to be a bunch of setTimeout() calls sprinkled
+    // throughout the code; this consolidates all that into one place
+    // so that things like a settable timeout length can be set in ONE
+    // place, and also to simplify writing it (less typing).  For
+    // right now, it'll be a fixed 5000 msec.
+
+    window.setTimeout(clear_txt, 5000, txtnode);
+
+}
+
+
 function clear_txt(where) {
     // intended for the callback of a setTimeout() to clear text after a time
     // The node could disappear before it times out, so catch the error
@@ -465,11 +482,18 @@ function save_to_brk(evt) {
     // The refresh will kill this message, need to refresh then show msg 
 
     brknode = refresh_breaks(brkidx);
-    if ( brknode !== true ) {
+
+    // refresh_breaks() can return "true" instead of an HTML object.
+    // It should not at this point, but it may
+    if ( typeof brknode === "object" ) {
 	brkelt = brknode;
 	dbg(0, "attempting update "+brkelt);
 	brkelt.miscmsg.textContent = "Saved.";
-	window.setTimeout(clear_txt, 5000, brkelt.miscmsg);
+	// Since the breaks list is sorted, if you just altered a
+	// break so it shows up somewhere else, you won't
+	// see the "saved" message.
+	brknode.scrollIntoView();
+	clear_msg_after_delay(brkelt.miscmsg);
     }
 }
 
