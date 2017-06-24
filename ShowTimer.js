@@ -22,6 +22,9 @@ showRef = otatime;
 var brk = new Array();
 var remind = new Array();
 var showBegin;
+var showLen;
+// 16:57:50 - 14:06:00 = 10310 seconds
+showLen = 10310;
 
 var tmobj = [ utc, timenow, otatime, nxtbreaktm, tmtilbreak ];
 
@@ -117,18 +120,30 @@ function ST_init(argv) {
 	}
     }
 
-    timenow.st.dtobj = now;
+    timenow.st.dtobj = new Date(now.getTime());
     utc.st.offFromReal = timenow.st.dtobj.getTimezoneOffset() * 60;
     // alert("initializing time: "+timenow.st.dtobj.toTimeString());
 
     otatime.st.offFromReal = OTAoff;
 
-    showBegin = now;
+    // yet another trap was here. "=" makes a reference to the "now"
+    // Date() obj, it does not create a new obj, which is what's
+    // really needed here.
+    showBegin = new Date(now.getTime());
+    // we'll assume the show begins today...
     showBegin.setHours(14);
     showBegin.setMinutes(6);
     showBegin.setSeconds(0);
     showBegin.setMilliseconds(0);
 
+
+    var showEnd = showBegin.getTime() + showLen * 1000;
+
+    // ... but if the show is alreay over, it must be tomorrow
+    if ( now.getTime() > showEnd ) {
+	showBegin.setDate(showBegin.getDate() + 1);
+    }
+    
     nxtbreaktm.st.dtobj = showBegin;
 
     tmupd(nxtbreaktm);
@@ -137,7 +152,7 @@ function ST_init(argv) {
 
     dbg(0, "leaving ST_init");
 
-    brk = load_breaks("techguy");
+    brk = load_breaks("techguy_breaks");
 
 }
 
@@ -219,14 +234,27 @@ function stObj(parentObj) {
 function tmupd(blk) {
     // update block "blk" (an HTML object with a ".st" member)
     
-    var st = blk.st
-    var tim = blk.st.dtobj;
+    var st = blk.st;
+
+    // really, we need to "decouple" the dtobj from the process of
+    // displaying that time, so we need a new Date obj.  There is no
+    // clone method for Date objects, so the best you can do is make
+    // another one and initialize its time to the time of the other.
+
+    // It was funny when I made the mistake of altering the time to
+    // the next break.  The display jumped all over the place.
+
+    var tim = new Date(blk.st.dtobj.getTime());
 
     var secs = tim.getSeconds();
     var milli = tim.getMilliseconds();
+    tim.setMilliseconds(milli+dispoff);
+    // millis may have gotten updated by adding the display offset
+    millis = tim.getMilliseconds();
 
     if ( showMillis ) {
 	st.millis.style.visibility = "visible";
+	// Want the "." between seconds and millis to become visible.
 	// I would have thought the prevSib of the millis item would be the
 	// td of the dot (styled by default as hidden), but it's two
 	// siblings back.  The first one back is a text node, which
@@ -333,10 +361,15 @@ function slow_tick(tol) {
     tmupd(utc);
     tmupd(timenow);
     tmupd(otatime);
-    // tmupd(nxtbreaktm);
+    tmupd(nxtbreaktm);
 
     toNxtEvt = nxtbreaktm.st.dtobj.getTime() -
-	showRef.st.dtobj.getTime() + dispoff;
+	showRef.st.dtobj.getTime();
+    var ms = toNxtEvt % 1000;
+    if ( ms >= 500 ) {
+	// round off to seconds
+	toNxtEvt += 1000 - ms;
+    }
     time_from_millis(toNxtEvt, tilbreak);
     tmupd(tilbreak);
 
@@ -351,6 +384,10 @@ function time_from_millis(millis, obj) {
     var secs;
     var mins;
     var hrs;
+
+    if ( millis < 0 ) {
+	return false;
+    }
 
     if ( obj.st !== undefined ) {
 	tgt = obj.st;

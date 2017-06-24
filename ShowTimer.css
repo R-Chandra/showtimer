@@ -1,7 +1,11 @@
+
+/* the default is not to show milliseconds in displays */
 [data-STrole=millis] {
     visibility: hidden;
 }
 
+/* This was to demonstrate having the individual components of
+    a displayed time have different colors */
 /* span[data-STrole=hr], span[data-STrole=min], span[data-STrole=sec] {
     color: gray;
 }
@@ -15,6 +19,7 @@ span[data-STrole=sec] {
 }
 */
 
+/* This was to show "subtables" with a white border */
 /* 
 td {
     border: 3px white solid;
@@ -22,13 +27,14 @@ td {
 */
 
 #main {
-    width: 95%;
+    width: 90%;
 }
 
 .tdisp {
     border: none;
     margin-right:0;
     margin-left: auto;
+    font-family: monospace;
 }
 
 .tdisp td {
@@ -70,12 +76,7 @@ table {
     font-size: 80px;
     font-family: monospace;
     background: black;
-}
-
-body {
-    background: rgb(0, 25, 75);
-    color: lightgreen;
-    width: 100%;
+    color: cyan;
 }
 
 .wallclock {
