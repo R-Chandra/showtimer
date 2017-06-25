@@ -78,6 +78,47 @@ function chg_milli_state(evt) {
     return true;
 }
 
+function colorObj(fg, bg, blinkfg, blinkbg, blinkmilli) {
+    this.blink = new Object();
+    this.fg = fg;
+    this.bg = bg;
+    if ( blinkfg === "" ) {
+	blinkfg = fg;
+    }
+    if ( blinkbg === "" ) {
+	blinkfg = bg;
+    }
+    this.blink.fg = blinkfg;
+    this.blink.bg = blinkbg;
+    this.blink.timer = -1;
+    this.blink.millis = blinkmilli;
+}
+
+
+// constructor for the "Show Timer" (st) object
+function stObj(parentObj) {
+    this.color = new Object();
+    // characteristics for out of synchronization
+    this.color.oos = new colorObj("pink", "black", "", "", 500);
+    this.color.normal = new colorObj("green", "black", "", "", 500);
+    this.color.soon = new colorObj("yellow", "black", "", "", 500);
+    this.color.reallysoon = new colorObj("red", "black", "black", "red", 500);
+    this.soon = 30;
+    this.verysoon = 5;
+
+    this.dtobj = new Date(0);
+    this.offFromReal = null;
+    this.hr = parentObj.querySelector("[data-st-role=hr]");
+    this.min = parentObj.querySelector("[data-st-role=min]");
+    this.sec = parentObj.querySelector("[data-st-role=sec]");
+    this.millis = parentObj.querySelector("[data-st-role=millis]");
+    this.millisShowing = false;
+
+    this.state = 0;
+
+    // return this;
+}
+
 function ST_init(argv) {
 
     var i, l, o, now;
@@ -190,51 +231,18 @@ function chg_color(obj, newcolor) {
     }
 }
 
-function colorObj(fg, bg, blinkfg, blinkbg, blinkmilli) {
-    this.blink = new Object();
-    this.fg = fg;
-    this.bg = bg;
-    if ( blinkfg === "" ) {
-	blinkfg = fg;
-    }
-    if ( blinkbg === "" ) {
-	blinkfg = bg;
-    }
-    this.blink.fg = blinkfg;
-    this.blink.bg = blinkbg;
-    this.blink.timer = -1;
-    this.blink.millis = blinkmilli;
-}
-
-
-// constructor for the "Show Timer" (st) object
-function stObj(parentObj) {
-    this.color = new Object();
-    // characteristics for out of synchronization
-    this.color.oos = new colorObj("pink", "black", "", "", 500);
-    this.color.normal = new colorObj("green", "black", "", "", 500);
-    this.color.soon = new colorObj("yellow", "black", "", "", 500);
-    this.color.reallysoon = new colorObj("red", "black", "black", "red", 500);
-    this.soon = 30;
-    this.verysoon = 5;
-
-    this.dtobj = new Date(0);
-    this.offFromReal = null;
-    this.hr = parentObj.querySelector("[data-STrole=hr]");
-    this.min = parentObj.querySelector("[data-STrole=min]");
-    this.sec = parentObj.querySelector("[data-STrole=sec]");
-    this.millis = parentObj.querySelector("[data-STrole=millis]");
-    this.millisShowing = false;
-
-    this.state = 0;
-
-    // return this;
-}
-
 function tmupd(blk) {
-    // update block "blk" (an HTML object with a ".st" member)
+    // update block "blk" on the page (an HTML object with a ".data-st"
+    // member).  This does NOT update anything else, only those things
+    // related to display of the time.  For example, this is not the
+    // routine which updates the dtobj.
     
     var st = blk.st;
+
+    // Since we're likely going to update several page elements, let's
+    // give the renderer a break by temporarily taking "blk" off the
+    // page.
+    blk.style.visibility = "hidden";
 
     // really, we need to "decouple" the dtobj from the process of
     // displaying that time, so we need a new Date obj.  There is no
@@ -244,13 +252,12 @@ function tmupd(blk) {
     // It was funny when I made the mistake of altering the time to
     // the next break.  The display jumped all over the place.
 
-    var tim = new Date(blk.st.dtobj.getTime());
+    var tim = new Date(st.dtobj.getTime());
 
-    var secs = tim.getSeconds();
     var milli = tim.getMilliseconds();
     tim.setMilliseconds(milli+dispoff);
-    // millis may have gotten updated by adding the display offset
     millis = tim.getMilliseconds();
+    var secs = tim.getSeconds();
 
     if ( showMillis ) {
 	st.millis.style.visibility = "visible";
@@ -278,6 +285,8 @@ function tmupd(blk) {
     st.hr.textContent = zeropad(tim.getHours(), 2);
     st.min.textContent = zeropad(tim.getMinutes(), 2);
     st.sec.textContent = zeropad(tim.getSeconds(), 2);
+
+    blk.style.visibility = "";
 
     dbg(-1,"tmupd done");
 }
@@ -429,77 +438,6 @@ function fasttick(tol) {
 }
 
 function sync2ToS(tolerance) {
-/*
-
-// A goal of this code is to have an accurate display of time, within
-// a relatively tight tolerance.  A question and response on Stack
-// Overflow has a GREAT suggestion about syncing time externally to
-// the system on which JavaScript runs by simply having the Date
-// object parse the Date: header in an HTTP(S) response.  This could
-// be handy for syncing to at least the Web servers of the particular
-// network for whom you're producing a real-time program (e.g. in
-// 2017, the example I'm thinking of is named Premiere Networks,
-// formerly Premiere Radio Networks, a subsidiary of iHeart Media,
-// formerly named Clear Channel Communications).  This may change in a
-// version later than Jun 2017, but this will rely on the local
-// system's rendition of true time.  If this method is used, we will
-// hand-wave top-of-second, and assume there is an integer number of
-// seconds' difference between that remote Web server's time and the
-// local time, thus the same top-of-second locally as remotely.  This
-// is because the resolution of Date: is only one second.
-//
-// We can possibly get sub-second resolution of remote time.  As of
-// this comment, there is at least:
-//
-//     http://www.time.gov/actualtime.cgi
-//
-// It has some optional parameters:
-//
-//     disablecache=1496679827438&__lzbc__=t2cvjw
-//
-// no idea what "__lzbc__" is, would seem to be some sort of nonce
-// (basically, a pseudorandomly generated string).  "disablecache" is
-// the number of microseconds since the Unix epoch.  The response XML
-// looks something like:
-//
-//     <timestamp time="1496679827854493" delay="1495183148027055"/>
-//
-// If __lzbc__ is left off, it looks like you get an estimate of the
-// number of microseconds delay between making the request and the Web
-// site's response.
-//
-// The original idea for display updates was to do whatever updates,
-// calcualtions, display changes, etc. (basically, the bulk of the
-// work), sample the real time, calculate how much time remains until
-// the next top-of-second, and schedule ourselves for that time with
-// setTimeout(). Experimentation shows that trying to time each second
-// precisely like that results in a TON of jitter.  The same basic
-// thing happens with trying to use setTimeout() to wait until the
-// top-of-second in order to setInterval() to implement a one second
-// tick for display updating.  It seems the best one can really do is
-// use a setInterval() with a relatively fast "tick" rate (say 50ms),
-// sample the time on each tick, and if the time is plus/minus the
-// desired accuracy interval, either do your updates/work then, or set
-// up your setInterval() at that time.
-//
-// So as not to be doing a syscall every 50ms, I tried getting the
-// current time (new Date().getMilliseconds()) and using that value as
-// a "virtual" clock, and only actually doing new Date() in our "fast
-// tick" when the time calculated from that virtual clock
-//
-//     virtclock += tickinterval
-//
-// would be within our tolerance interval. Experimentation showed that
-// every now and again, doing the maths for our ToS sampling resulted
-// in missing some ToSes, even with a window of two times plus or
-// minus the ticking interval (so with our 50ms example, 100ms before
-// through 100ms after ToS).  I could only get reliability by setting
-// up a "fallback" setInterval(1000ms); initiated by setTimeout();,
-// which is "ToS inaccurate" anyway. So the most sound strategy would
-// seem to be to tick rapidly (e.g., 50ms), do an actual new Date();
-// on each tick, and set a 1000ms interval near that discovered ToS.
-
-*/
 
     if ( syncing ) {
 	console.warn("already resyncing");
