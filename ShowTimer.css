@@ -1,6 +1,6 @@
 
 /* the default is not to show milliseconds in displays */
-[data-STrole=millis] {
+[data-st-role=millis] {
     visibility: hidden;
 }
 
