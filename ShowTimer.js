@@ -1,6 +1,8 @@
 
 // alert("top.");
 
+// dbug = 2;
+
 var timenow = document.getElementById("timenow");
 if ( timenow === null ) {
     alert("Huh? What happened to the 'timenow' <div>?");
@@ -19,7 +21,8 @@ var globalRealOff = 0;
 var OTAoff = 40;
 var showRef;
 showRef = otatime;
-var brk = new Array();
+var brk;
+var brkidx = -1;
 var remind = new Array();
 var showBegin;
 var showLen;
@@ -63,6 +66,7 @@ function stopST(evt) {
 function handle_blink(blk) {
     // This makes the time displayed at "blk" appear to blink by
     // alternating between the blink fg/bg and normal fg/bg
+    // This is the callback/recipient arg of setInterval()
 }
 
 function chg_milli_state(evt) {
@@ -121,10 +125,12 @@ function stObj(parentObj) {
 
 function ST_init(argv) {
 
-    var i, l, o, now;
-    var bod;
+    var i, l, o, now, unixnow;
+    var b;
+    var showBeginMs;
 
-    now = new Date();
+    now = getNewDate();
+    unixnow = now.getTime();
 
     dbg(0, "started ST_init at "+now.toTimeString());
 
@@ -132,10 +138,9 @@ function ST_init(argv) {
 
     elapsedStat = document.getElementById("tickHandleTime");
 
-    var bod = document.getElementsByTagName("body");
-    bod = bod[0];
-    bod.style.background = "";
-
+    // In case someone (a developer in the debugger?) restarts the
+    // app, make sure the default background returns
+    document.body.style.background = "";
 
     o = document.getElementById("stopST");
     o.addEventListener("click", stopST, false);
@@ -177,14 +182,14 @@ function ST_init(argv) {
     showBegin.setSeconds(0);
     showBegin.setMilliseconds(0);
 
-
     var showEnd = showBegin.getTime() + showLen * 1000;
 
     // ... but if the show is alreay over, it must be tomorrow
     if ( now.getTime() > showEnd ) {
 	showBegin.setDate(showBegin.getDate() + 1);
     }
-    
+    showBeginMs = showBegin.getTime();
+
     nxtbreaktm.st.dtobj = showBegin;
 
     tmupd(nxtbreaktm);
@@ -194,6 +199,44 @@ function ST_init(argv) {
     dbg(0, "leaving ST_init");
 
     brk = load_breaks("techguy_breaks");
+    // so should we refuse to do anything if breaks didn't load?  For
+    // this stage though, if the breaks loaded successfully, for our
+    // purposes here, milliseconds since the Unix epoch are more
+    // useful than the seconds which have been recorded.  This is
+    // therefore the show beginning plus the offsets in brk[].
+    if ( brk ) {
+	var slotFound = false;
+	
+	if ( unixnow >= showBegin.getTime() ) {
+	    brkidx = 0;
+	}
+
+	dbg(2, "ST_init(): figuring break slot.");
+	l = brk.length;
+	dbg(2, "considering "+l+" entries.");
+	brk[-1] = { begin: showBeginMs };
+	for ( i = 0; i < l; i++ ) {
+	    b = brk[i];
+	    b.begin *= 1000;
+	    b.begin += showBeginMs;
+	    b.end *= 1000;
+	    b.end += showBeginMs;
+	    dbg(2, "considering beg "+b.begin+" , unixnow "+unixnow);
+	    if ( ! slotFound ) {
+		dbg(2, "not found yet at "+i);
+		if ( unixnow < b.begin ) {
+		    brkidx = i;
+		    if ( unixnow >= brk[i - 1].begin ) {
+			slotFound = true;
+		    }
+		}
+	    }
+	}
+	delete brk[-1];
+	if ( slotFound ) {
+	    nxtbreaktm.st.dtobj = new Date(brk[brkidx].begin);
+	}
+    }
 
 }
 
@@ -370,6 +413,9 @@ function slow_tick(tol) {
     tmupd(utc);
     tmupd(timenow);
     tmupd(otatime);
+
+    
+
     tmupd(nxtbreaktm);
 
     toNxtEvt = nxtbreaktm.st.dtobj.getTime() -
