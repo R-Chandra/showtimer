@@ -1,0 +1,177 @@
+ShowTimer.txt
+=============
+
+(Some of this might be a copy from the README.md file, which on GitHub
+is used to display information to people browsing a repository on that
+site.)
+
+the "why" (the reason this facility was created)
+================================================
+
+Many moons ago, when he was performing his Premiere Networks radio
+show, Léo Laporte used to "miss" his ad breaks...to the extent that he
+was getting complaints from (I think) affiliates who were saying he
+was talking over station promos or such-like, which are supposed to be
+played (generally by automation) at very specific times, but still
+during the liner (e.g. "LLULINER" on the Premiere charts).  (You can
+see the charts (as of the original authorship of this paragraph) at
+Premiere's Engineering site
+(http://engineering.premiereradio.com/files/pages/showclocks.html) ,
+under the labels "Leo Laporte (Satur|Sun)day".  Or
+alternately, there is probably one archived at:
+
+http://web.archive.org/web/20170616232341/http://engineering.premiereradio.com/pro4p/files/clocks/XDS%20Aff%20Leo%20Laporte%20Saturday.pdf
+
+They're PDFs.)  It says on the charts that the breaks after segments 1
+and 3 every hour may float, but at least in early 2017 Léo explained
+during a break (over the twit.tv and twit.am streams) that if he
+didn't treat them as hard breaks, he'd "never" get them in.  (As it
+is, with some small regularity, he misses the live reads that are
+supposed to be in segments 4, 8, and 12...he has even missed some in
+segment 12, where THERE'S NO MORE SHOW THAT DAY to do a makeup.)
+
+So what Léo did was create an Android app that would, in really large
+numbers, and coded in colors, tell him the state of the show
+(something like blue numbers for in a break or before the show, green
+for supposed to be on-air, and red when getting close to time for a
+break).  That was a big help to him, but it is a very specific
+program.  If Premiere were to change the time(s) he has to break, he
+would have to recompile and redeploy the app to his tablet.
+
+Shortly after he showed/explained his app, this project's original
+author thought, why limit this to just a specific Android app?  Why
+not generalize this by using HTML and JavaScript?  The author had
+tossed around some ideas of how that might be implemented, using
+localStorage for example to retain the information about the show
+beginning and each break.  In June of 2017, the original author began
+creating this from scratch.  The ONLY goal was to recreate the
+functionality of that Android app, to "time" a show with all hard
+breaks, and to make visual changes when nearing time for a break.
+This app does not seek to replicate the appearance of Léo's app
+though; it has more things displayed (such as real time, over-the-air
+(OTA) time, as well as a countdown--most importantly, a
+minutes:seconds (MM:SS) display instead of raw number of seconds).
+Sure, the countdown is larger than most of the rest, but the other
+stuff would be there as the author thought to be practical and
+interesting.  (As an example, it has been discussed occasionally
+during the show's breaks that "OTA time" is real time plus 40 seconds,
+primarily to give the boardop a 40 seconds delay to dump bad audio
+such as swearing.  So the project's OTA clock time by default shows 40
+seconds into the future.)
+
+high-level design
+=================
+
+The page displays one main table which has the time displays plus
+labels for what each time or countdown is.  Each element has a
+specific "id=" attribute in order to locate it within the page.  One
+thing to note about this is, there are complete data structures (one
+object unimaginatively named "st" with several "sub-"objects as
+members) attached to these (HTML) elements.  The author tried to
+follow the idea that app-specific data attached to elements should be
+named "data-*", but as it turns out, with Web browsers at the time
+this was begun, these are of type "DOMStringMap".  Therefore, the
+"beautiful" and carefully constructed object was turned into simply
+the string "[object Object]"!  Accessing members, even through
+someid.dataset.st.something, will therefore fail miserably.
+
+A goal of this code is to have an accurate display of time, within a
+relatively tight tolerance.  A question and response on Stack Overflow
+has a GREAT suggestion about syncing time externally to the system on
+which JavaScript runs by simply having the Date object parse the Date:
+header in an HTTP(S) response.  This could be handy for syncing to at
+least the Web servers of the particular network for whom you're
+producing a real-time program (e.g. in 2017, the example I'm thinking
+of is named Premiere Networks, formerly Premiere Radio Networks, a
+subsidiary of iHeart Media, formerly named Clear Channel
+Communications).  This may change in a version later than Jun 2017,
+but this will rely on the local system's rendition of true time.  If
+this method is used, we will hand-wave top-of-second, and assume there
+is an integer number of seconds' difference between that remote Web
+server's time and the local time, thus the same top-of-second locally
+as remotely.  This is because the resolution of Date: is only one
+second.
+
+We can possibly get sub-second resolution of remote time.  As of the
+time this documentation was initiated, there is at least:
+
+    http://www.time.gov/actualtime.cgi
+
+It has some optional parameters:
+
+    disablecache=1496679827438&__lzbc__=t2cvjw
+
+no idea what "__lzbc__" is, it would seem to be some sort of nonce
+(basically, a pseudorandomly generated string).  "disablecache" is
+the number of microseconds since the Unix epoch.  The response XML
+looks something like:
+
+    <timestamp time="1496679827854493" delay="1495183148027055"/>
+
+If __lzbc__ is left off, it looks like you get an estimate of the
+number of microseconds delay between making the request and the Web
+site's response.
+
+The original idea for display updates was to do whatever updates,
+calcualtions, display changes, etc. (basically, the bulk of the work),
+sample the real time, calculate how much time remains until the next
+top-of-second, and schedule ourselves for that time with
+setTimeout(). Experimentation showed that trying to time each second
+precisely like that results in a TON of jitter.  The same basic thing
+happens with trying to use setTimeout() to wait until the
+top-of-second in order to setInterval() to implement a one second tick
+for display updating.  It seems the best one can really do is use a
+setInterval() with a relatively fast "tick" rate (say 50ms), sample
+the time on each tick, and if the time is plus/minus the desired
+accuracy interval, either do your updates/work then, or set up your
+setInterval() at that time.
+
+So as not to be doing a syscall (such as gettimeofday(2) or
+clock_gettime(2)) every 50ms, the author tried getting the current
+time (new Date().getMilliseconds()) and using that value as a
+"virtual" clock, and only actually doing new Date() in our "fast tick"
+when the time calculated from that virtual clock
+
+    virtclock += tickinterval
+
+would be within our tolerance interval. Experimentation showed that
+every now and again, doing the maths for our top-of-second (ToS)
+sampling resulted in missing some ToSes, even with a window of two
+times plus or minus the ticking interval (so with our 50ms example,
+100ms before through 100ms after ToS).  The only way reliability was
+achieved was by setting up a "fallback" setInterval(1000ms); initiated
+by setTimeout();, which is "ToS inaccurate" anyway. So the most sound
+strategy would seem to be to tick rapidly (e.g., every 50ms), do an
+actual new Date(); on each tick, and set a 1000ms interval near that
+discovered ToS.
+
+What is done is to do away with the usual meaning of "tolerance" as
+"+/-" and consider just "+".  This vastly simplifies calculations and
+displays of times.
+
+First, there is a variable "globalRealOff" which keeps track of the
+desired variance in milliseconds, either positive or negative, between
+new Date() and the program's concept of real time.  This is intended
+to account for not only any difference between the system's time and
+the desired timebase (for example the system clock is, say, 3 seconds
+too slow), but also the "phase angle" of when stuff gets done (for
+example if updates every second take, say, 30 ms to process, we can
+fire our tick somewhere around 30 ms BEFORE ToS).  This is the value
+the internals use, provided by getNewDate() to centralize this.
+Ordinarily, the program should not call new Date() (no arguments)
+directly for this reason; all "decisions" should be make with
+globalRealOff already applied.
+
+
+Next, there is also the variable "dispoff", the display offset in
+milliseconds (also can be positive or negative).  This is different
+from globalRealOff, in that it really affects only the DISPLAY of
+information, not the information itself.  In other words, again, the
+timing of what's displayed is with globalRealOff applied but what is
+actually on the page is influenced by dispoff.  As an example, there
+is an approximately 10 second buffer for the TWiT audio-only live
+stream, so to sync with what's heard, dispoff can be set to 10000 to
+shift the display forward 10 seconds.  Again, as an example, the show
+starts at 14:05:20 Eastern (40 seconds before OTA time of 14:06:00),
+but the audio for the show start won't be HEARD until 14:05:30.
+
