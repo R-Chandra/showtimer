@@ -13,11 +13,13 @@ const BEFORE_SHOW = 0,
       BUMP_IN = 1, // technically ON_AIR, but while bumper music is playing
       ON_AIR = 2, // talent should be talking
       TIME_SHORT = 3, // break/end coming soon
-      TIME_REALLY_SHORT = 4, // break/end coming REALLY soon
+      TIME_VERY_SHORT = 4, // break/end coming REALLY soon
       IN_BREAK = 5, // ad should be playing
       BUMP_SOON = 6, // ad still playing, but BUMP_IN approaching
-      BUMP_REALLY_SOON = 7, // ad still playing, but very near to BUMP_IN
-      AFTER_SHOW = 8; // time at or past showBegin + showLen
+      BUMP_VERY_SOON = 7; // ad still playing, but very near to BUMP_IN
+// You could think of "after show" as "before show", as in, before
+// the next show.
+
 
 var utc = document.getElementById("UTC");
 var otatime = document.getElementById("OTAtime");
@@ -36,10 +38,20 @@ var brk;
 var brkidx = -1;
 var remind = new Array();
 var showBegin;
+showBegin = getNewDate();
+// we'll assume the show begins today...
+showBegin.setHours(14);
+showBegin.setMinutes(6);
+showBegin.setSeconds(0);
+showBegin.setMilliseconds(0);
+
 var showState;
 var showLen;
+var showEnd;
 // 16:57:50 - 14:06:00 = 10310 seconds
 showLen = 10310;
+var etab = new Array(); // event table
+var etabidx; // current index into etab; advanced when time > etab[].when
 
 var tmobj = [ utc, timenow, otatime, nxtbreaktm, tmtilbreak ];
 
@@ -193,6 +205,63 @@ function stObj(parentObj) {
     return this;
 }
 
+function add_events(unixms, begend) {
+    // Every event on a high level (starting the show, going to break,
+    // coming back from a break, ending the show) causes multiple
+    // state changes.  This routine takes a time "unixms" (in
+    // milliseconds since the epoch) and appends entries to the etab[]
+    // event table.  "begend" tells whether these events are being
+    // appended for the transition states beginning ("b") a break or
+    // ending ("e") a break.
+
+    var soon = showRef.st.soon;
+    var vsoon = showRef.st.verysoon;
+    var soonst; // state for soon time
+    var vsoonst; // state for very soon time
+    var lastst; // last state appended
+    var lastms; // msec since the epoch of last state
+
+    if ( begend === "b" ) {
+	soonst = TIME_SHORT;
+	vsoonst = TIME_VERY_SHORT;
+	lastst = IN_BREAK;
+	lastms = unixms;
+    } else if ( begend === "e" ) {
+	soonst = BUMP_SOON;
+	vsoonst = BUMP_VERY_SOON;
+	lastst = ON_AIR;
+	lastms = unixms + showRef.st.bumplen * 1000;
+    } else {
+	console.warn('add_events() unexpected arg "'+begend+'"');
+	return false;
+    }
+
+    etab.push( { when: unixms - soon * 1000,
+		 state: soonst
+		 // debugging info: human-readable time for this event
+		 , evtTimestr: new Date(unixms - soon * 1000).toTimeString()
+	       } );
+    etab.push( { when: unixms - vsoon * 1000,
+		 state: vsoonst
+		 // debugging info: human-readable time for this event
+		 , evtTimestr: new Date(unixms - vsoon * 1000).toTimeString()
+	       } );
+    if ( lastst === ON_AIR ) {
+	etab.push( { when: unixms,
+		     state: BUMP_IN
+		     // debugging info: human-readable time for this event
+		     , evtTimestr: new Date(unixms).toTimeString()
+		   } );
+    }
+    etab.push( { when: lastms,
+		 state: lastst
+		 // debugging info: human-readable time for this event
+		 , evtTimestr: new Date(lastms).toTimeString()
+	       } );
+}
+
+
+
 function ST_init(argv) {
 
     // initialize a session.  This involves attaching event listeners
@@ -204,7 +273,6 @@ function ST_init(argv) {
     var showBeginMs;
 
     now = getNewDate();
-    unixnow = now.getTime();
 
     dbg(0, "started ST_init at "+now.toTimeString());
 
@@ -246,31 +314,17 @@ function ST_init(argv) {
 
     otatime.st.offFromReal = OTAoff;
 
-    // yet another trap was here. "=" makes a reference to the "now"
-    // Date() obj, it does not create a new obj, which is what's
-    // really needed here.
-    showBegin = new Date(now.getTime());
-    // we'll assume the show begins today...
-    showBegin.setHours(14);
-    showBegin.setMinutes(6);
-    showBegin.setSeconds(0);
-    showBegin.setMilliseconds(0);
-
-    var showEnd = showBegin.getTime() + showLen * 1000;
+    showBeginMs = showBegin.getTime();
+    showEnd = showBeginMs + showLen * 1000;
 
     // ... but if the show is alreay over, it must be tomorrow
     if ( now.getTime() > showEnd ) {
 	showBegin.setDate(showBegin.getDate() + 1);
+	showEnd = showBegin.getTime() + showLen * 1000;
     }
     showBeginMs = showBegin.getTime();
 
-    nxtbreaktm.st.dtobj = showBegin;
-
-    tmupd(nxtbreaktm);
-
-    sync2ToS();
-
-    dbg(0, "leaving ST_init");
+    add_events(showBeginMs, "e");
 
     brk = load_breaks("techguy_breaks");
     // so should we refuse to do anything if breaks didn't load?  For
@@ -279,38 +333,54 @@ function ST_init(argv) {
     // useful than the seconds which have been recorded.  This is
     // therefore the show beginning plus the offsets in brk[].
     if ( brk ) {
-	var slotFound = false;
 	
-	if ( unixnow >= showBegin.getTime() ) {
-	    brkidx = 0;
-	}
+	var bb, be;
 
-	dbg(2, "ST_init(): figuring break slot.");
 	l = brk.length;
-	dbg(2, "considering "+l+" entries.");
-	brk[-1] = { begin: showBeginMs };
 	for ( i = 0; i < l; i++ ) {
 	    b = brk[i];
-	    b.begin *= 1000;
-	    b.begin += showBeginMs;
-	    b.end *= 1000;
-	    b.end += showBeginMs;
-	    dbg(2, "considering beg "+b.begin+" , unixnow "+unixnow);
-	    if ( ! slotFound ) {
-		dbg(2, "not found yet at "+i);
-		if ( unixnow < b.begin ) {
-		    brkidx = i;
-		    if ( unixnow >= brk[i - 1].begin ) {
-			slotFound = true;
-		    }
-		}
-	    }
-	}
-	delete brk[-1];
-	if ( slotFound ) {
-	    nxtbreaktm.st.dtobj = new Date(brk[brkidx].begin);
+	    bb = b.begin * 1000; // break beginning
+	    bb += showBeginMs;
+	    add_events(bb, "b");
+	    be = b.end * 1000;   // break end
+	    be += showBeginMs;
+	    add_events(be, "e");
 	}
     }
+
+    add_events(showEnd, "b");
+    l = etab.length;
+    // The last state is really before the next show
+    etab[l - 1].state = BEFORE_SHOW;
+
+    unixnow = now.getTime() + showRef.st.offFromReal * 1000;
+
+    if ( unixnow < etab[0].when ) {
+	// current time is before the event table even begins.
+	// Checking for it explicitly avoids a comparison with
+	// etab[-1].
+	showState = BEFORE_SHOW;
+	nxtbreaktm = new Date(showBeginMs);
+	etabidx = 0;
+    } else {
+	etabidx = 1;
+	while ( unixnow > etab[etabidx - 1].when ) {
+	    etabidx++;
+	}
+	i = etabidx;
+	while ( etab[i].state !== BUMP_IN &&
+		etab[i].state !== IN_BREAK ) {
+	    i++;
+	}
+	nxtbreaktm.st.dtobj = new Date(etab[i].when);
+    }
+
+
+    tmupd(nxtbreaktm);
+
+    sync2ToS();
+
+    dbg(0, "leaving ST_init");
 
 }
 
