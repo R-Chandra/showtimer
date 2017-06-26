@@ -8,6 +8,17 @@ if ( timenow === null ) {
     alert("Huh? What happened to the 'timenow' <div>?");
 }
 
+// states of the show
+const BEFORE_SHOW = 0,
+      BUMP_IN = 1, // technically ON_AIR, but while bumper music is playing
+      ON_AIR = 2, // talent should be talking
+      TIME_SHORT = 3, // break/end coming soon
+      TIME_REALLY_SHORT = 4, // break/end coming REALLY soon
+      IN_BREAK = 5, // ad should be playing
+      BUMP_SOON = 6, // ad still playing, but BUMP_IN approaching
+      BUMP_REALLY_SOON = 7, // ad still playing, but very near to BUMP_IN
+      AFTER_SHOW = 8; // time at or past showBegin + showLen
+
 var utc = document.getElementById("UTC");
 var otatime = document.getElementById("OTAtime");
 var nxtbreaktm = document.getElementById("nxtbreak");
@@ -25,6 +36,7 @@ var brk;
 var brkidx = -1;
 var remind = new Array();
 var showBegin;
+var showState;
 var showLen;
 // 16:57:50 - 14:06:00 = 10310 seconds
 showLen = 10310;
@@ -63,13 +75,35 @@ function stopST(evt) {
     stopping = true;
 }
 
-function handle_blink(blk) {
-    // This makes the time displayed at "blk" appear to blink by
-    // alternating between the blink fg/bg and normal fg/bg
-    // This is the callback/recipient arg of setInterval()
+function handle_blink(which) {
+    // A color object has severl members for what state one wants to
+    // be presented, so "which" points to one of the members (oos,
+    // onAir, soon, etc.).  This makes the time displayed by the HTML
+    // block enclosing "which" to appear to blink by alternating
+    // between the blink fg/bg and normal fg/bg.  This function is the
+    // callback/recipient arg of setInterval(), so it must look at the
+    // blink state to know to which colors to change.
+
+    var htm = which.parent.parent;
+    var fg, bg;
+
+    if ( which.blink.state === BLINK_BLINK ) {
+	fg = which.blink.fg;
+	bg = which.blink.bg;
+	which.blink.state = BLINK_NORM;
+    } else {
+	fg = which.fg;
+	bg = which.bg;
+	which.blink.state = BLINK_BLINK;
+    }
+    htm.style.color = fg;
+    htm.style.background = bg;
+	
 }
 
 function chg_milli_state(evt) {
+    // This receives the change event where the user toggles the "show
+    // milliseconds" checkbox
     var tgt = evt.target;
 
     dbg(2, "target is "+tgt);
@@ -82,7 +116,23 @@ function chg_milli_state(evt) {
     return true;
 }
 
-function colorObj(fg, bg, blinkfg, blinkbg, blinkmilli) {
+const BLINK_NORM = 0, // blink state normal fg/bg colors
+      BLINK_BLINK = 1; // blink state alternate colors
+
+function colorObj(parentObj, fg, bg, blinkfg, blinkbg, blinkmilli) {
+
+    // This is the constructor for an instance of a "color descriptor"
+    // object.  The "fg" member (the foreground color, i.e., the color
+    // of the text) gets set to arg "fg", the "bg" member (background
+    // color) gets set to the arg "bg", etc.  It also creates a
+    // "blink" object, which describes the fg/bg color when the item
+    // is blinking.  "blink" also holds the return from setInterval(),
+    // or -1 if it's not in use (clearInterval() called).
+    // blink.millis is the rate at which setInterval() should call the
+    // handler.  "parentObj" is the parent object so that given the
+    // descriptor, we can find the HTML block which needs the color
+    // changes.
+
     this.blink = new Object();
     this.fg = fg;
     this.bg = bg;
@@ -96,22 +146,42 @@ function colorObj(fg, bg, blinkfg, blinkbg, blinkmilli) {
     this.blink.bg = blinkbg;
     this.blink.timer = -1;
     this.blink.millis = blinkmilli;
+    // start off blinking when initally starting to blink, transition
+    // to BLINK_NORM after blink.millis msecs
+    this.blink.state = BLINK_BLINK;
+    this.parent = parentObj;
+
+    return this;
 }
 
 
-// constructor for the "Show Timer" (st) object
 function stObj(parentObj) {
-    this.color = new Object();
+    // constructor for the "Show Timer" (st) object.
+    //
+    // We send in the parent node object so that we can limit the
+    // scope of querySelector() to only this object (not sure if
+    // this.parentNode gets us where we need to be)
+
+    var co = new Object();
     // characteristics for out of synchronization
-    this.color.oos = new colorObj("pink", "black", "", "", 500);
-    this.color.normal = new colorObj("green", "black", "", "", 500);
-    this.color.soon = new colorObj("yellow", "black", "", "", 500);
-    this.color.reallysoon = new colorObj("red", "black", "black", "red", 500);
+    co.oos = new colorObj(co, "pink", "black", "", "", 500);
+    // blink slowly with "onAir" colors in state BUMP_IN,
+    co.onAir = new colorObj(co, "darkgreen", "black",
+				    "green", "black", 1000);
+    co.soon = new colorObj(co, "yellow", "black", "", "", 500);
+    co.verysoon = new colorObj(co, "red", "black", "black", "red", 500);
+    co.parent = parentObj;
+    this.color = co;
+    // not that we'd split hairs (really only timing to a second), but
+    // to avoid lots of multiplies by 1000 in the tick handler, express
+    // times in seconds, but ST_init() will make these milliseconds.
     this.soon = 30;
     this.verysoon = 5;
+    this.bumplen = 30; // how long BUMP_IN lasts
 
     this.dtobj = new Date(0);
     this.offFromReal = null;
+    // for easy access, point to some HTML nodes
     this.hr = parentObj.querySelector("[data-st-role=hr]");
     this.min = parentObj.querySelector("[data-st-role=min]");
     this.sec = parentObj.querySelector("[data-st-role=sec]");
@@ -120,10 +190,14 @@ function stObj(parentObj) {
 
     this.state = 0;
 
-    // return this;
+    return this;
 }
 
 function ST_init(argv) {
+
+    // initialize a session.  This involves attaching event listeners
+    // to the controls, finding some of the elements, setting the
+    // beginning time of the show, 
 
     var i, l, o, now, unixnow;
     var b;
@@ -477,7 +551,9 @@ function fasttick(tol) {
 	dbg(3, "Sync established.");
 	syncing = 0;
 	slowTickerObj = window.setInterval(slow_tick, 1000, tol);
-	chg_color(timenow, timenow.st.color.normal.fg);
+	chg_color(timenow, timenow.st.color.onAir.fg);
+	// with "", do whatever CSS says?
+	// chg_color(timenow, "");
 	// show an update before the interval "fires"
 	slow_tick(tol);
     }
