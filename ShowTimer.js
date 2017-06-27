@@ -27,6 +27,7 @@ var brkidx = -1;
 var remind = new Array();
 var showBegin;
 showBegin = getNewDate();
+
 // we'll assume the show begins today...
 showBegin.setHours(14);
 showBegin.setMinutes(6);
@@ -66,6 +67,25 @@ function getNewDate() {
     return dobj;
 }
 
+function get_show_start_hour() {
+    var now = new Date();
+    var nowOff = now.getTimezoneOffset();
+    now.setMonth(0);
+    var JanOff = now.getTimezoneOffset();
+    var EToff = 300;
+    var localDiff;
+
+    if ( nowOff !== JanOff ) {
+	// We're under daylight saving time
+	EToff = 240;
+    }
+
+    localDiff = EToff - nowOff;
+
+    return 14 + localDiff / 60;
+}
+
+showBegin.setHours(get_show_start_hour());
 
 function stopST(evt) {
     // There is the global variable "stopping" because if we're in the
