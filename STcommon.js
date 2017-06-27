@@ -10,6 +10,20 @@
 
 var dbug = 3;
 
+// states of the show
+const BEFORE_SHOW = 0,
+      BUMP_IN = 1, // technically ON_AIR, but while bumper music is playing
+      ON_AIR = 2, // talent should be talking
+      TIME_SHORT = 3, // break/end coming soon
+      TIME_VERY_SHORT = 4, // break/end coming REALLY soon
+      IN_BREAK = 5, // ad should be playing
+      BUMP_SOON = 6, // ad still playing, but BUMP_IN approaching
+      BUMP_VERY_SOON = 7, // ad still playing, but very near to BUMP_IN
+      SHOW_DONE = 8;
+
+// You could think of "after show" as "before show", as in, before
+// the next show.
+
 function dbg(lvl, msg) {
     if ( lvl >= dbug ) {
 	console.log(lvl+": "+msg);
@@ -160,3 +174,50 @@ function hms2secs(str) {
     return secs;
 }
 
+function state2str(st) {
+    // Given state "st", what does the const look
+    // like in the source?
+    // Returns "unknown" if the number is out of range.
+    const state = [ "BEFORE_SHOW",
+		    "BUMP_IN",
+		    "ON_AIR",
+		    "TIME_SHORT",
+		    "TIME_VERY_SHORT",
+		    "IN_BREAK",
+		    "BUMP_SOON",
+		    "BUMP_VERY_SOON",
+		    "SHOW_DONE" ];
+
+    if ( st < BEFORE_SHOW ||
+	 st > SHOW_DONE ) {
+	return "unknown";
+    } else {
+	return state[st];
+    }
+}
+
+
+
+function st2col(st) {
+    // For state "st", which member of st.color should be
+    // used for coloration of the HTML node?  If the state
+    // is out of range, let CSS take over by returning "".
+    const statetab =
+	  [ "",     // according to CSS; no additional styling
+	    "onAir",
+	    "onAir",
+	    "soon",
+	    "verysoon",
+	    "",    // according to CSS; no additional styling
+	    "soon",
+	    "verysoon",
+	    ""    // according to CSS; no additional styling
+	  ];
+
+    if ( st < BEFORE_SHOW ||
+	 st > SHOW_DONE ) {
+	return "";
+    } else {
+	return statetab[st];
+    }
+}
