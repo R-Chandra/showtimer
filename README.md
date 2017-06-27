@@ -12,3 +12,15 @@ Shortly after he showed/explained his app, this repository's original author tho
 # Status
 
 As the inital branch name (pre-alpha) implies, this system is not fully functional.  There is one page which implements the clocks ticking in real time, with a countdown timer to the start of the show in US Eastern Time (where the author lives).  It does not do anything about show breaks, but it does have a page to enter/edit them.  It relies on localStorage to store the information about breaks, but it does have a JSON export/import textarea.  There is one example of this import capability in [techguy.json](techguy.json) .  You would copy/paste this into "export area" in the [ShowTimerBreakEdit.html](ShowTimerBreakEdit.html) file.
+
+# an apology about commit messages
+
+Before 27-Jun-2017, I did not know that commit messages were supposed
+to be split into a short description and anything more invovlved,
+separated by a blank line.  The initial author was treating these like
+RCS log messages, and did not know this convention amongst Git users
+existed.  So some of the commits, especially in the pre-alpha branch,
+have quite lengthy commit messages.  And I'd like to apologize for
+that.  If I had known, I would have followed the summary+explanation
+format. :-(
+
