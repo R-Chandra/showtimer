@@ -38,6 +38,7 @@ showBegin.setMilliseconds(0);
 
 
 var showState;
+var showPrevState; // helps with transitions
 var showLen;
 var showEnd;
 // 16:57:50 - 14:06:00 = 10310 seconds
@@ -88,7 +89,7 @@ function handle_blink(which) {
     // callback/recipient arg of setInterval(), so it must look at the
     // blink state to know to which colors to change.
 
-    var htm = which.parent.parent;
+    var htm = which.parent.parent.parent;
     var fg, bg;
 
     if ( which.blink.state === BLINK_BLINK ) {
@@ -103,6 +104,38 @@ function handle_blink(which) {
     htm.style.color = fg;
     htm.style.background = bg;
 	
+}
+
+function beginBlink(which) {
+    // Initiate blinking of the style "which".  As the color object
+    // has links to the parent object, we can find the HTML block
+    // which needs the .style.color... attributes changed.
+
+    var tmr = which.blink.timer; // not a ref, only current value!!
+    var period = which.blink.millis;
+
+    // might happen that we call this twice; cancel any blinking and
+    // resync
+    if ( tmr !== null ) {
+	endBlink(which);
+    }
+
+    which.blink.timer = setInterval(handle_blink, period, which);
+    return true;
+}
+
+function endBlink(which) {
+    // End the blinking going on with "which," and restore the
+    // coloration to which.parent.currentColor
+
+    var hblk = which.parent.parent.parent;
+
+    if ( which.blink.timer !== null ) {
+	clearInterval(which.blink.timer);
+	which.blink.timer = null;
+    }
+
+    chg_color(hblk, which.parent.currentColor);
 }
 
 function chg_milli_state(evt) {
@@ -131,7 +164,7 @@ function colorObj(parentObj, fg, bg, blinkfg, blinkbg, blinkmilli) {
     // color) gets set to the arg "bg", etc.  It also creates a
     // "blink" object, which describes the fg/bg color when the item
     // is blinking.  "blink" also holds the return from setInterval(),
-    // or -1 if it's not in use (clearInterval() called).
+    // or null if it's not in use (clearInterval() called).
     // blink.millis is the rate at which setInterval() should call the
     // handler.  "parentObj" is the parent object so that given the
     // descriptor, we can find the HTML block which needs the color
@@ -140,15 +173,21 @@ function colorObj(parentObj, fg, bg, blinkfg, blinkbg, blinkmilli) {
     this.blink = new Object();
     this.fg = fg;
     this.bg = bg;
-    if ( blinkfg === "" ) {
-	blinkfg = fg;
-    }
-    if ( blinkbg === "" ) {
-	blinkfg = bg;
-    }
+
+    // Here there used to be code so that if the blink colors were
+    // sent in as zero length (null?) strings, the normal colors would
+    // be copied to the blink colors, thus causing no blinking even
+    // though blinking was requested.  Instead, keep it blank, which
+    // would mean alternating between CSS-imposed coloration and
+    // another color (from the base fg/bg colors).
+
     this.blink.fg = blinkfg;
     this.blink.bg = blinkbg;
-    this.blink.timer = -1;
+    // "timer" is to hold the setInterval() result
+    this.blink.timer = null;
+    // "count" intended to automatically stop blinking in the
+    // blink handler after some time or iteration count
+    this.blink.count = 0;
     this.blink.millis = blinkmilli;
     // start off blinking when initally starting to blink, transition
     // to BLINK_NORM after blink.millis msecs
@@ -170,18 +209,20 @@ function stObj(parentObj) {
     // characteristics for out of synchronization
     co.oos = new colorObj(co, "pink", "black", "", "", 500);
     // blink slowly with "onAir" colors in state BUMP_IN,
-    co.onAir = new colorObj(co, "darkgreen", "black",
-				    "green", "black", 1000);
+    co.onAir = new colorObj(co, "limegreen", "black",
+				    "darkgreen", "black", 1500);
     co.soon = new colorObj(co, "yellow", "black", "", "", 500);
     co.verysoon = new colorObj(co, "red", "black", "black", "red", 500);
-    co.parent = parentObj;
+    co.parent = this;
+    co.currentColor = co.onAir;
     this.color = co;
     // not that we'd split hairs (really only timing to a second), but
     // to avoid lots of multiplies by 1000 in the tick handler, express
     // times in seconds, but ST_init() will make these milliseconds.
     this.soon = 30;
     this.verysoon = 10;
-    this.bumplen = 30; // how long BUMP_IN lasts
+    this.bumplen = 30; // how long the BUMP_IN state lasts
+    this.parent = parentObj;
 
     this.dtobj = new Date(0);
     this.offFromReal = null;
@@ -318,6 +359,11 @@ function ST_init(argv) {
     utc.st.offFromReal = timenow.st.dtobj.getTimezoneOffset() * 60;
 
     otatime.st.offFromReal = OTAoff;
+    otatime.st.color.onAir.fg = ""; // fallback to CSS
+    otatime.st.color.onAir.bg = ""; // fallback to CSS
+
+    nxtbreaktm.st.color.onAir.fg = ""; // fallback to CSS
+    nxtbreaktm.st.color.onAir.bg = ""; // fallback to CSS
 
     showBeginMs = showBegin.getTime();
     showEnd = showBeginMs + showLen * 1000;
@@ -369,8 +415,12 @@ function ST_init(argv) {
 	nxtbreaktm.st.dtobj = new Date(showBeginMs);
 	etabidx = 0;
     } else {
-	etabidx = 1;
-	while ( unixnow > etab[etabidx - 1].when ) {
+	etabidx = 0;
+	dbg(2, "Unix now: "+new Date(unixnow).toTimeString());
+	while ( unixnow > etab[etabidx + 1].when ) {
+	    dbg(2, "--- skipping over "+(etabidx+1)+" ("+
+		new Date(etab[etabidx].when).toTimeString()+", "+
+		state2str(etab[etabidx].state)+")");
 	    etabidx++;
 	}
 	showState = etab[etabidx].state;
@@ -420,19 +470,26 @@ function updFudge(ffactObj) {
 }
 
 function chg_color(obj, newcolor) {
-    // change the color of "obj" and all descendants to string "newcolor"
+    // change the color of "obj" to "newcolor".
+    // If newcolor is a string, change the foreground color
+    // If newcolor is a color object, change the fg and bg, and
+    // set the currentColor to newcolor
 
-    obj.style.color = newcolor;
+    var ctyp = typeof newcolor;
 
-    if ( false ) {
-	var olist = obj.getElementsByTagName("*");
-	var l = olist.length;
-	var i;
-	for ( i=0; i < l; i++ ) {
-	    var o = olist[i];
-	    o.style.color = newcolor;
-	}
+    if ( ctyp === "string" ) {
+	obj.style.color = newcolor;
+    } else if ( ctyp === "object" ) {
+	newcolor.parent.currentColor = newcolor;
+	obj.style.color = newcolor.fg;
+	obj.style.background = newcolor.bg;
+    } else {
+	console.warn("chg_color() arg not string or object, instead "+ctyp);
+	return false;
     }
+
+    return true;
+
 }
 
 function tmupd(blk) {
@@ -618,7 +675,27 @@ function slow_tick(tol) {
 	if ( newCol === "" ) {
 	    chg_color(tmtilbreak, "");
 	} else {
-	    chg_color(tmtilbreak, tmtilbreak.st.color[newCol].fg);
+	    chg_color(tmtilbreak, tmtilbreak.st.color[newCol]);
+	}
+
+	showPrevState = showState;
+	showState = newState;
+
+	if ( newState === BUMP_VERY_SOON ||
+	     newState === TIME_VERY_SHORT ) {
+	    beginBlink(tmtilbreak.st.color.verysoon);
+	} else if ( newState === IN_BREAK ) {
+	    endBlink(tmtilbreak.st.color.verysoon);
+	    // seems the blink handler was getting in one last lick, and
+	    // making the text red on black.
+	    // let CSS take over
+	    tmtilbreak.style.color = "";
+	    tmtilbreak.style.background = "";
+	} else if ( newState === BUMP_IN ) {
+	    endBlink(tmtilbreak.st.color.verysoon);
+	    beginBlink(tmtilbreak.st.color.onAir);
+	} else if ( newState === ON_AIR ) {
+	    endBlink(tmtilbreak.st.color.onAir);
 	}
 
 	etabidx++;
