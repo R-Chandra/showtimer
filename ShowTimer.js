@@ -1,24 +1,12 @@
 
 // alert("top.");
 
-// dbug = 2;
+dbug = 2;
 
 var timenow = document.getElementById("timenow");
 if ( timenow === null ) {
     alert("Huh? What happened to the 'timenow' <div>?");
 }
-
-// states of the show
-const BEFORE_SHOW = 0,
-      BUMP_IN = 1, // technically ON_AIR, but while bumper music is playing
-      ON_AIR = 2, // talent should be talking
-      TIME_SHORT = 3, // break/end coming soon
-      TIME_VERY_SHORT = 4, // break/end coming REALLY soon
-      IN_BREAK = 5, // ad should be playing
-      BUMP_SOON = 6, // ad still playing, but BUMP_IN approaching
-      BUMP_VERY_SOON = 7; // ad still playing, but very near to BUMP_IN
-// You could think of "after show" as "before show", as in, before
-// the next show.
 
 
 var utc = document.getElementById("UTC");
@@ -44,6 +32,10 @@ showBegin.setHours(14);
 showBegin.setMinutes(6);
 showBegin.setSeconds(0);
 showBegin.setMilliseconds(0);
+
+// showBegin.setHours(new Date().getHours());
+// showBegin.setMinutes(new Date().getMinutes()+2);
+
 
 var showState;
 var showLen;
@@ -188,7 +180,7 @@ function stObj(parentObj) {
     // to avoid lots of multiplies by 1000 in the tick handler, express
     // times in seconds, but ST_init() will make these milliseconds.
     this.soon = 30;
-    this.verysoon = 5;
+    this.verysoon = 10;
     this.bumplen = 30; // how long BUMP_IN lasts
 
     this.dtobj = new Date(0);
@@ -220,6 +212,8 @@ function add_events(unixms, begend) {
     var vsoonst; // state for very soon time
     var lastst; // last state appended
     var lastms; // msec since the epoch of last state
+    var unixsoon;
+    var unixvsoon;
 
     if ( begend === "b" ) {
 	soonst = TIME_SHORT;
@@ -236,28 +230,40 @@ function add_events(unixms, begend) {
 	return false;
     }
 
-    etab.push( { when: unixms - soon * 1000,
+    // var tmp = dbug;
+    // dbug = 0;
+    unixsoon = unixms - (soon * 1000);
+    unixvsoon = unixms - vsoon * 1000;
+    dbg(0, "pushing soon: "+soon+"/"+unixsoon+
+	" state "+soonst+" ("+state2str(soonst)+")");
+    etab.push( { when: unixsoon,
 		 state: soonst
 		 // debugging info: human-readable time for this event
 		 , evtTimestr: new Date(unixms - soon * 1000).toTimeString()
 	       } );
-    etab.push( { when: unixms - vsoon * 1000,
+    dbg(0, "pushing very soon: "+vsoon+"/"+unixvsoon+
+	" state "+vsoonst+" ("+state2str(vsoonst)+")");
+    etab.push( { when: unixvsoon,
 		 state: vsoonst
 		 // debugging info: human-readable time for this event
 		 , evtTimestr: new Date(unixms - vsoon * 1000).toTimeString()
 	       } );
     if ( lastst === ON_AIR ) {
+	dbg(0, "pushing bumper playing: "+unixms+" state BUMP_IN");
 	etab.push( { when: unixms,
 		     state: BUMP_IN
 		     // debugging info: human-readable time for this event
 		     , evtTimestr: new Date(unixms).toTimeString()
 		   } );
     }
+    dbg(0, "pushing last state: "+lastms+" state "+state2str(lastst));
     etab.push( { when: lastms,
 		 state: lastst
 		 // debugging info: human-readable time for this event
 		 , evtTimestr: new Date(lastms).toTimeString()
 	       } );
+
+    // dbug = tmp;
 }
 
 
@@ -310,7 +316,6 @@ function ST_init(argv) {
 
     timenow.st.dtobj = new Date(now.getTime());
     utc.st.offFromReal = timenow.st.dtobj.getTimezoneOffset() * 60;
-    // alert("initializing time: "+timenow.st.dtobj.toTimeString());
 
     otatime.st.offFromReal = OTAoff;
 
@@ -350,8 +355,9 @@ function ST_init(argv) {
 
     add_events(showEnd, "b");
     l = etab.length;
-    // The last state is really before the next show
-    etab[l - 1].state = BEFORE_SHOW;
+    etab[l - 1].state = SHOW_DONE;
+    // The last state is really before the next show, but
+    // this last state is simpler.
 
     unixnow = now.getTime() + showRef.st.offFromReal * 1000;
 
@@ -360,23 +366,34 @@ function ST_init(argv) {
 	// Checking for it explicitly avoids a comparison with
 	// etab[-1].
 	showState = BEFORE_SHOW;
-	nxtbreaktm = new Date(showBeginMs);
+	nxtbreaktm.st.dtobj = new Date(showBeginMs);
 	etabidx = 0;
     } else {
 	etabidx = 1;
 	while ( unixnow > etab[etabidx - 1].when ) {
 	    etabidx++;
 	}
+	showState = etab[etabidx].state;
 	i = etabidx;
 	while ( etab[i].state !== BUMP_IN &&
-		etab[i].state !== IN_BREAK ) {
+		etab[i].state !== IN_BREAK &&
+		etab[i].state !== SHOW_DONE ) {
 	    i++;
 	}
 	nxtbreaktm.st.dtobj = new Date(etab[i].when);
     }
 
+    dbg(2, " ST_init: determined show state is "+state2str(showState));
+    var newCol = st2col(showState);
+    if ( newCol === "" ) {
+	chg_color(tmtilbreak, "");
+    } else {
+	chg_color(tmtilbreak, tmtilbreak.st.color[newCol].fg);
+    }
 
-    tmupd(nxtbreaktm);
+    // think this upd is done in slow tick() anyway. Times were that
+    // this was not the case, but it was added later
+    // tmupd(nxtbreaktm);
 
     sync2ToS();
 
@@ -527,9 +544,10 @@ function slow_tick(tol) {
     // get the msecs right away
     var msecs = now.getMilliseconds();
     var secs;
+    var unixms;
     var toNextEvt;
 
-    dbg(0, "1s tick. "+secs);
+    dbg(0, "1s tick.");
 
     timenow.st.dtobj = now;
 
@@ -558,19 +576,63 @@ function slow_tick(tol) {
     tmupd(timenow);
     tmupd(otatime);
 
-    
-
     tmupd(nxtbreaktm);
 
-    toNxtEvt = nxtbreaktm.st.dtobj.getTime() -
-	showRef.st.dtobj.getTime();
+    unixms = showRef.st.dtobj.getTime();
+    dbg(1, "   deciding at "+etabidx+": "+unixms);
+    dbg(1, "                  "+etab[etabidx].when);
+    if ( unixms >= etab[etabidx].when ) {
+	// we've reached an event time
+	var newState;
+	var nxtVisEvt; // next visible event in nxtbreaktm
+
+	newState = etab[etabidx].state;
+	dbg(2, "state change reached, new state at "+
+	    etabidx+": "+newState+" ("+state2str(newState)+")");
+	if ( newState === SHOW_DONE ) {
+	    // show has ended
+	    stopping = true;
+	    return true;
+	}
+	if ( newState === IN_BREAK ||
+	     newState === BUMP_IN ) {
+	    if ( newState === IN_BREAK ) {
+		// if now in break, find next time for bumper music
+		nxtVisEvt = BUMP_IN;
+	    } else {
+		// if now bumping in, find next break (or end of show?)
+		nxtVisEvt = IN_BREAK;
+	    }
+	    i = etabidx;
+	    dbg(2, "seeking from "+newState+" to "+nxtVisEvt);
+	    dbg(2, " (from "+state2str(newState)+" to "+
+		state2str(nxtVisEvt)+")");
+	    while ( etab[i].state !== nxtVisEvt &&
+		    etab[i].state !== SHOW_DONE ) {
+		i++;
+	    }
+	    nxtbreaktm.st.dtobj = new Date(etab[i].when);
+	}
+
+	var newCol = st2col(newState);
+	if ( newCol === "" ) {
+	    chg_color(tmtilbreak, "");
+	} else {
+	    chg_color(tmtilbreak, tmtilbreak.st.color[newCol].fg);
+	}
+
+	etabidx++;
+    }
+
+    toNxtEvt = nxtbreaktm.st.dtobj.getTime() - showRef.st.dtobj.getTime();
+
     var ms = toNxtEvt % 1000;
     if ( ms >= 500 ) {
 	// round off to seconds
 	toNxtEvt += 1000 - ms;
     }
-    time_from_millis(toNxtEvt, tilbreak);
-    tmupd(tilbreak);
+    time_from_millis(toNxtEvt, tmtilbreak);
+    tmupd(tmtilbreak);
 
     elapsedStat.textContent = getNewDate().getTime() - entryTime;
 
