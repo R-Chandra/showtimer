@@ -11,7 +11,9 @@ Shortly after he showed/explained his app, this repository's original author tho
 
 # Status
 
-As the inital branch name (pre-alpha) implies, this system is not fully functional.  There is one page which implements the clocks ticking in real time, with a countdown timer to the start of the show in US Eastern Time (where the author lives).  It does not do anything about show breaks, but it does have a page to enter/edit them.  It relies on localStorage to store the information about breaks, but it does have a JSON export/import textarea.  There is one example of this import capability in [techguy.json](techguy.json) .  You would copy/paste this into "export area" in the [ShowTimerBreakEdit.html](ShowTimerBreakEdit.html) file.
+There is one page which implements the clocks ticking in real time, with a countdown timer to the start of the show in US Eastern Time (where the author lives).  It also has a page to enter/edit the breaks.  It relies on localStorage to store the information about breaks, but it does have a JSON export/import textarea.  There is one example of this import capability in [techguy.json](techguy.json) .  You would copy/paste this into "export area" in the [ShowTimerBreakEdit.html](ShowTimerBreakEdit.html) file.
+
+The system now has basic functionality, with the countdown display showing the time until the next event, and the next event being picked/displayed.  But this really should  parameterize more than just the breaks, it should remember the show start time, show length, the desired timing tolerance, the time offset for OTAtime, and so on, to generalize use for more than just "The Tech Guy" in US/Eastern time.  This generally means making another page to edit and save these variables, and on startup (or call to ST_init()) read these in and override the builtin defaults.  The variables are in the program, but for now they remain fixed and built in.
 
 # an apology about commit messages
 
