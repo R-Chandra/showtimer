@@ -91,3 +91,10 @@ table {
     color: lightgreen;
     background: gray;
 }
+
+.reminder {
+    font-size: xx-large;
+    color: white;
+    background: black;
+    border: 2px darkred solid;
+}
