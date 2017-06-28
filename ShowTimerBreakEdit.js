@@ -34,7 +34,7 @@ function fill_export_area() {
 function slurp_export_area() {
 
     // The export (and actually import) area "exparea" is assumed to
-    // contain JSON representing the brkp[] breaks list.  Obviously
+    // contain JSON representing the brk[] breaks list.  Obviously
     // the minimum sized list would be "[]" so check to see if the
     // size in the textarea is at least 2.
 
@@ -43,17 +43,22 @@ function slurp_export_area() {
     // invalid breaks list.  It's assumed you "know what you're
     // doing."
 
-    if ( exparea.value.length < 2 ) {
+    var xarea = exparea.value;
+
+    if ( xarea.length < 2 ) {
 	alert("doesn't look like there's anything to import.");
 	return false;
     }
+
+    xarea = xarea.replace(/^[ 	]*var[ 	]*defaultbrk[ 	]*=[ 	]*/, "");
+    // alert("you have: >"+xarea+"<");
 
     if ( brk.length > 0 ) {
 	if ( ! confirm("Overwrite current breaks list?") ) {
 	    return false;
 	}
     }
-    brk = JSON.parse(exparea.value);
+    brk = JSON.parse(xarea);
     refresh_breaks();
 }
 
