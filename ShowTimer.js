@@ -437,9 +437,10 @@ function ST_init(argv) {
     } else {
 	etabidx = 0;
 	dbg(2, "Unix now: "+new Date(unixnow).toTimeString());
-	while ( unixnow > etab[etabidx + 1].when ) {
+	while ( unixnow > etab[etabidx + 1].when &&
+		etab[etabidx + 1].state !== SHOW_DONE ) {
 	    dbg(2, "--- skipping over "+(etabidx+1)+" ("+
-		new Date(etab[etabidx].when).toTimeString()+", "+
+		new Date(etab[etabidx].when).toString()+", "+
 		state2str(etab[etabidx].state)+")");
 	    etabidx++;
 	}
@@ -576,6 +577,18 @@ function begin_stop_within_tick(currTime) {
     window.clearInterval(slowTickerObj);
     slowTickerObj = null;
     tmupd(timenow, currTime);
+    for ( var o of tmobj ) {
+	dbg(1, "stopping obj "+o);
+	for ( var c in o.st.color ) {
+	    dbg(1, "   stopping color "+c);
+	    if ( c !== "currentColor" &&
+		 c !== "parent" ) {
+		var bstop = o.st.color[c];
+		dbg(2, "stop blink on "+bstop+" which is "+c);
+		endBlink(bstop);
+	    }
+	}
+    }
     var but = document.getElementById("stopST");
     but.removeEventListener("click", stopST, false);
     but.textContent = "Stopped.";
