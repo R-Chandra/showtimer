@@ -52,17 +52,49 @@ function load_breaks(profname) {
     // to append "_breaks" to the key name, but then that did
     // not allow for the idea of a profile backup name.
 
+    var breaktab = try_load_breaks(profname);
+
+    if ( breaktab !== false ) {
+	return breaktab;
+    }
+
+    if ( typeof defaultbrk === "object" ) {
+	// arrays are objects
+	console.warn('Tried to load breaks "'+profname+'" but instead returning default array of breaks.');
+	return defaultbrk;
+    }
+
+    return false;
+}
+
+function try_load_breaks(profname) {
+
+    // This does the actual work of attempting to load the profile.
+    // This was refactored because there are now two ways this can
+    // fail to load the profile (return false), and I wanted an idea
+    // of a built-in default breaks list.  So the "API" as it were
+    // calls "load_breaks()" and if we return false, see if there
+    // exists a "defaultbrk" array and return that.
+
     var breaklist = new Array();
+    var breakListStr;
+
+    try {
+	breakListStr = localStorage.getItem(profname);
+    } catch (err) {
+	console.warn("could not access "+profname+" in localStorage: "+err);
+	return false;
+    }
     
-    breaklist = JSON.parse(localStorage.getItem(profname));
+    breaklist = JSON.parse(breakListStr);
     if ( ! breaklist ) {
-	console.log("load_breaks("+profname+"): came up empty.");
+	console.warn("load_breaks("+profname+"): came up empty.");
 	return false;
     }
     // Just a historical note: The .begin and .end used to be Date()
-    // objects, and of course, JSON records the date string instead of
-    // an object.  Therefore, there USED TO BE a loop here recreating
-    // objects from strings.
+    // objects, and of course, JSON records the date as a string
+    // instead of an object.  Therefore, there USED TO BE a loop here
+    // recreating objects from strings.
 
     return breaklist;
 }
