@@ -67,25 +67,7 @@ function getNewDate() {
     return dobj;
 }
 
-function get_show_start_hour() {
-    var now = new Date();
-    var nowOff = now.getTimezoneOffset();
-    now.setMonth(0);
-    var JanOff = now.getTimezoneOffset();
-    var EToff = 300;
-    var localDiff;
-
-    if ( nowOff !== JanOff ) {
-	// We're under daylight saving time
-	EToff = 240;
-    }
-
-    localDiff = EToff - nowOff;
-
-    return 14 + localDiff / 60;
-}
-
-showBegin.setHours(get_show_start_hour());
+showBegin.setHours(14+get_show_start_hour_offset());
 
 function stopST(evt) {
     // There is the global variable "stopping" because if we're in the
@@ -233,6 +215,8 @@ function stObj(parentObj) {
 				    "darkgreen", "black", 1500);
     co.soon = new colorObj(co, "yellow", "black", "", "", 500);
     co.verysoon = new colorObj(co, "red", "black", "black", "red", 500);
+    // special case of "revert to CSS" styling by setting fg = bg = ""
+    co.revertCSS = new colorObj(co, "", "", "", "", 1000);
     co.parent = this;
     co.currentColor = co.onAir;
     this.color = co;
@@ -456,11 +440,7 @@ function ST_init(argv) {
 
     dbg(2, " ST_init: determined show state is "+state2str(showState));
     var newCol = st2col(showState);
-    if ( newCol === "" ) {
-	chg_color(tmtilbreak, "");
-    } else {
-	chg_color(tmtilbreak, tmtilbreak.st.color[newCol].fg);
-    }
+    chg_color(tmtilbreak, tmtilbreak.st.color[newCol].fg);
 
     // think this upd is done in slow tick() anyway. Times were that
     // this was not the case, but it was added later
@@ -577,7 +557,10 @@ function begin_stop_within_tick(currTime) {
     window.clearInterval(slowTickerObj);
     slowTickerObj = null;
     tmupd(timenow, currTime);
-    for ( var o of tmobj ) {
+    var o;
+    var i;
+    for ( i in tmobj ) {
+	o = tmobj[i];
 	dbg(1, "stopping obj "+o);
 	for ( var c in o.st.color ) {
 	    dbg(1, "   stopping color "+c);
@@ -596,7 +579,7 @@ function begin_stop_within_tick(currTime) {
     chg_color(tmtilbreak, "red");
     document.getElementsByTagName("body")[0].style.background = "rgb(40,0,0)";
     console.log("***+++*** Shutdown @ "+
-		currTime.toTimeString()+
+		currTime.toString()+
 		" ***+++***");
 }
 
@@ -705,11 +688,7 @@ function slow_tick(tol) {
 	}
 
 	var newCol = st2col(newState);
-	if ( newCol === "" ) {
-	    chg_color(tmtilbreak, "");
-	} else {
-	    chg_color(tmtilbreak, tmtilbreak.st.color[newCol]);
-	}
+	chg_color(tmtilbreak, tmtilbreak.st.color[newCol]);
 
 	showPrevState = showState;
 	showState = newState;

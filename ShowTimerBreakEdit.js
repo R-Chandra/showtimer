@@ -582,33 +582,5 @@ function handle_fetch(evt) {
     dbg(1, "    page supposedly populated.");
 }
 
-function find_all_profiles() {
-
-    var i, l, k;
-    var optproto = document.createElement("option");
-    var opt;
-
-    var brksidx, klen;
-
-    // empty any existing options
-    while ( (opt = profiles.firstChild) !== null ) {
-	profiles.removeChild(opt);
-    }
-
-    l = localStorage.length;
-    for ( i = 0; i < l; i++ ) {
-	k = localStorage.key(i);
-	klen = k.length;
-	dbg(0, "got key "+k+" length "+klen);
-	if ( (brksidx = k.indexOf("_breaks")) > 0 &&
-	     brksidx == klen - 7 ) {
-	    dbg(0,"*** so added from key "+k);
-	    opt = optproto.cloneNode(false);
-	    opt.textContent = k.replace(/_breaks/, "");
-	    profiles.appendChild(opt);
-	}
-    }
-}
-
 
 find_all_profiles();

@@ -10,7 +10,38 @@
 
 var dbug = 3;
 
-// states of the show
+function get_show_start_hour_offset() {
+
+    // This returns the number of hours difference between the
+    // computer's configured local timezone and US/Eastern.  This
+    // would depend on the browswer's implementatin of the Date
+    // object's getTimezoneOffset() method.  US/Eastern is 5 hours
+    // (300 minutes) behind UTC in January, and during daylight
+    // saviing time (DST), 240 minutes.  So for example, if the
+    // computer is configured for US/Pacific time during DST,
+    // getTimezoneOffset() will return 420, therefore 240-420 = -180,
+    // or 3 hours west of EDT.  For the example of "The Tech Guy,"
+    // this would be added to 14 to produce 11, or 11 AM, which is the
+    // hour of the beginning of the show in Petaluma.
+
+    var now = new Date();
+    var nowOff = now.getTimezoneOffset();
+    now.setMonth(0);
+    var JanOff = now.getTimezoneOffset();
+    var EToff = 300;
+    var localDiff;
+
+    if ( nowOff !== JanOff ) {
+	// We're under daylight saving time
+	EToff = 240;
+    }
+
+    localDiff = EToff - nowOff;
+
+    return localDiff / 60;
+}
+
+// symbolic states of the show
 const BEFORE_SHOW = 0,
       BUMP_IN = 1, // technically ON_AIR, but while bumper music is playing
       ON_AIR = 2, // talent should be talking
@@ -22,7 +53,8 @@ const BEFORE_SHOW = 0,
       SHOW_DONE = 8;
 
 // You could think of "after show" as "before show", as in, before
-// the next show.
+// the next show.  But SHOW_DONE marks the end of the precomputed
+// events table.
 
 function dbg(lvl, msg) {
     if ( lvl >= dbug ) {
@@ -32,6 +64,11 @@ function dbg(lvl, msg) {
 }
 
 function zeropad(num, places) {
+
+    // This takes "num" and pads with zeroes so that the result ends
+    // up being "places" digits.  For example, positive seconds less
+    // than 10 are typically preceeded by ":0".
+
     var s = num.toString();
     var i;
 
@@ -43,7 +80,7 @@ function zeropad(num, places) {
 }
 
 
-var brk;
+var brk;  // the list of breaks
 
 function load_breaks(profname) {
 
@@ -58,8 +95,7 @@ function load_breaks(profname) {
 	return breaktab;
     }
 
-    if ( typeof defaultbrk === "object" ) {
-	// arrays are objects
+    if ( Array.isArray(defaultbrk) ) {
 	console.warn('Tried to load breaks "'+profname+'" but instead returning default array of breaks.');
 	return defaultbrk;
     }
@@ -73,8 +109,8 @@ function try_load_breaks(profname) {
     // This was refactored because there are now two ways this can
     // fail to load the profile (return false), and I wanted an idea
     // of a built-in default breaks list.  So the "API" as it were
-    // calls "load_breaks()" and if we return false, see if there
-    // exists a "defaultbrk" array and return that.
+    // calls "load_breaks()" and if we return false here, it sees if
+    // there exists a "defaultbrk" array and returns that.
 
     var breaklist = new Array();
     var breakListStr;
@@ -91,10 +127,13 @@ function try_load_breaks(profname) {
 	console.warn("load_breaks("+profname+"): came up empty.");
 	return false;
     }
+
     // Just a historical note: The .begin and .end used to be Date()
     // objects, and of course, JSON records the date as a string
     // instead of an object.  Therefore, there USED TO BE a loop here
-    // recreating objects from strings.
+    // recreating objects from strings.  However, it did not seem
+    // useful to keep them as objects, and instead they're offsets in
+    // seconds from the start of the show.
 
     return breaklist;
 }
@@ -117,6 +156,7 @@ function secs2minsec(insecs) {
     // Centralize this conversion by calling the hms converter (JUST
     // in case the format changes or a bug is discovered).  It is
     // admittedly a little inefficient in terms of computation.
+
     str = secs2hmsStr(insecs);
     hrs = str.substring(0,2);
     if ( hrs === "00" ) {
@@ -133,7 +173,9 @@ function secs2minsec(insecs) {
 
 
 function secs2hmsStr(insecs) {
+
     // form an hours, minutes, seconds string from "insecs" number of seconds
+
     var str = "";
     var t = insecs;
     var secs,mins,hrs;
@@ -152,11 +194,13 @@ function secs2hmsStr(insecs) {
 }
 
 function hms2secs(str) {
-    // take string "str" which is in the format hours:minutes:seconds and
+
+    // Take string "str" which is in the format hours:minutes:seconds and
     // convert that to a number of seconds.  Zero, one, or two colons are
     // allowed.  Any characters other than the digits and a colon make this
     // function return false.  Also if minutes or seconds are greater than
-    // 59 will cause a return of false.
+    // 59 will cause a return of false.  A colon followed by nothing
+    // assumes zero, so for example "4:" means four minutes.
 
     var secs = 0;
     var c, l, i;
@@ -183,8 +227,8 @@ function hms2secs(str) {
 	    dbg(1, "    char "+c+" not in range");
 	    return false;
 	} else {
-	    // add the next digit by shifting the result so
-	    // far by one decimal place and add current one
+	    // add the next digit by shifting the <result so
+	    // far> by one decimal place and add current one
 	    val *= 10;
 	    val += parseInt(c);
 	}
@@ -231,25 +275,59 @@ function state2str(st) {
 
 
 function st2col(st) {
+
     // For state "st", which member of st.color should be
     // used for coloration of the HTML node?  If the state
     // is out of range, let CSS take over by returning "".
+
     const statetab =
-	  [ "",     // according to CSS; no additional styling
+	  [ "revertCSS",
 	    "onAir",
 	    "onAir",
 	    "soon",
 	    "verysoon",
-	    "",    // according to CSS; no additional styling
+	    "revertCSS",
 	    "soon",
 	    "verysoon",
-	    ""    // according to CSS; no additional styling
+	    "revertCSS"
 	  ];
 
     if ( st < BEFORE_SHOW ||
 	 st > SHOW_DONE ) {
-	return "";
+	return "revertCSS";
     } else {
 	return statetab[st];
     }
 }
+
+function find_all_profiles() {
+
+    var i, l, k;
+    var seen = new Array();
+    var prof;
+    var optproto = document.createElement("option");
+    var opt;
+
+    var brksidx, klen;
+
+    // empty any existing options
+    while ( (opt = profiles.firstChild) !== null ) {
+	profiles.removeChild(opt);
+    }
+
+    l = localStorage.length;
+    for ( i = 0; i < l; i++ ) {
+	k = localStorage.key(i);
+	klen = k.length;
+	dbg(0, "got key "+k+" length "+klen);
+	prof = k.replace(/_(break|params)(_bak[0-9]*)?$/, "");
+	if ( ! seen.includes(prof) ) {
+	    dbg(0,"*** so added from key "+k);
+	    seen.push(prof);
+	    opt = optproto.cloneNode(false);
+	    opt.textContent = prof;
+	    profiles.appendChild(opt);
+	}
+    }
+}
+
