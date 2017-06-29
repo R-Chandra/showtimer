@@ -26,15 +26,23 @@ td {
 }
 */
 
-#main {
-    width: 90%;
-}
-
 .tdisp {
     border: none;
     margin-right:0;
     margin-left: auto;
     font-family: monospace;
+}
+
+/* The JS code ensures that there are no milliseconds kept 
+     track of in the main countdown timer, so there is no
+     reason it needs to be displayed.  But code relies on
+     ALL timing objects to have a "millis" member, so it
+     has to be present.  Just make it invisible.
+*/
+
+#tilbreak [data-st-role="millis"],
+#tilbreak td:nth-child(6){
+    display: none;
 }
 
 .tdisp td {
@@ -73,8 +81,9 @@ table {
 }
 
 .countdown {
-    font-size: 80px;
+    font-size: 100px;
     font-family: monospace;
+    display: inline-block;
     background: black;
     color: cyan;
 }
@@ -88,13 +97,13 @@ table {
 /*    font-family: cursive, serif, sans-serif, helvetica;
  */
     font-family: monospace, system-ui, Vibur, serif ;
-    color: lightgreen;
-    background: gray;
+    color: white;
+    background: maroon;
 }
 
 .reminder {
     font-size: xx-large;
     color: white;
     background: black;
-    border: 2px darkred solid;
+    border: 2px white solid;
 }

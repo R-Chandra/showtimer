@@ -35,18 +35,16 @@
 	      <div class="timelabel">next break/segment</div>
 	    </td>
 	  </tr>
-	  <tr>
-
-	    <!-- hours:minuts:seconds until next break or event -->
-	    
+	  <tr> <!-- hours:minuts:seconds until next break or event -->
 	    <td>
 	      <table id="tilbreak" class="tdisp countdown">
-		<tr>
-		  <td data-st-role="hr">--</td>
+		<tr><td data-st-role="hr">--</td>
 		  <td>:</td>
 		  <td data-st-role="min">--</td>
 		  <td>:</td>
 		  <td data-st-role="sec">--</td>
+		  <!-- This will get display: none;, but it has to
+		       follow the pattern of the rest for JavsScript -->
 		  <td>.</td>
 		  <td data-st-role="millis">---</td>
 		</tr>
@@ -115,7 +113,7 @@
 	      </table>
 	    </td>
 	    <td>
-	      <span class="timelabel">OTA time</span>
+	      <div class="timelabel">OTA time</div>
 	    </td>
 	  </tr>
 	  <tr>
