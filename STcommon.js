@@ -110,7 +110,8 @@ function load_breaks(profname) {
 	return breaktab;
     }
 
-    if ( Array.isArray(defaultbrk) ) {
+    if ( typeof defaultbrk !== "undefined" &&
+	 Array.isArray(defaultbrk) ) {
 	console.warn('Tried to load breaks "'+profname+'" but that does not exist.');
 	if ( confirm('Profile "'+profname.replace(/_breaks/, "")+'" not found in localStorage, load the default list instead?') ) {
 	    return defaultbrk;
@@ -359,10 +360,10 @@ function find_all_profiles() {
     for ( i = 0; i < l; i++ ) {
 	k = localStorage.key(i);
 	klen = k.length;
-	dbg(0, "got key "+k+" length "+klen);
-	prof = k.replace(/_(break|params)(_bak[0-9]*)?$/, "");
+	dbg(1, "got key "+k+" length "+klen);
+	prof = k.replace(/_(breaks|params)(_bak[0-9]*)?$/, "");
 	if ( ! seen.includes(prof) ) {
-	    dbg(0,"*** so added from key "+k);
+	    dbg(1,"*** so added from key "+k+" the profile "+prof);
 	    seen.push(prof);
 	    opt = optproto.cloneNode(false);
 	    opt.textContent = prof;

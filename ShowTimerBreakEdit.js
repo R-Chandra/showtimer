@@ -1,7 +1,11 @@
 
-var showBase = 14 * 60 * 60 + 6 * 60; // show starts at 6 mins past the hour
+var showBegin = 14 * 60 * 60 + 6 * 60; // show starts at 6 mins past the hour
 
-dbug = 1;
+var localOff = get_show_start_hour_offset();
+
+showBegin += (localOff * 60);
+
+dbug = 3;
 
 var profinp = document.getElementById("prof");
 var currprof;
@@ -158,7 +162,7 @@ function upd_local(evt) {
 
     blk = evt.target.dataroot;
     beg = hms2secs(blk.brkbegin.value);
-    blk.locbegin.textContent = secs2hmsStr(beg + showBase);
+    blk.locbegin.textContent = secs2hmsStr(beg + showBegin);
 }
 
 function prepare_break_form(pgnode) {
@@ -201,10 +205,10 @@ function prepare_break_form(pgnode) {
     pgnode.rm.addEventListener("click", delete_brk, false);
 
     pgnode.brkbegin.value = secs2hmsStr(b.begin);
-    pgnode.locbegin.textContent = secs2hmsStr(b.begin + showBase);
+    pgnode.locbegin.textContent = secs2hmsStr(b.begin + showBegin);
     pgnode.brkend.value = secs2hmsStr(b.end);
     pgnode.brkend.dataroot = pgnode;
-    pgnode.locend.textContent = secs2hmsStr(b.end + showBase);
+    pgnode.locend.textContent = secs2hmsStr(b.end + showBegin);
 
     brlen = b.end - b.begin;
     pgnode.brklensecs.value = brlen;
@@ -514,9 +518,9 @@ function calc_end(evt) {
 
     dbg(0, "break #"+brkidx+" is at "+brkelt.brkbegin.value+" which is +"+beg);
     dbg(0, "    new end "+end);
-    brkelt.locbegin.textContent = secs2hmsStr(showBase + beg);
+    brkelt.locbegin.textContent = secs2hmsStr(showBegin + beg);
     brkelt.brkend.value = end;
-    brkelt.locend.textContent = secs2hmsStr(showBase + beg + len);
+    brkelt.locend.textContent = secs2hmsStr(showBegin + beg + len);
 }
 
 
