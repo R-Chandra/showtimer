@@ -65,14 +65,14 @@ high-level design
 The page displays one main table which has the time displays plus
 labels for what each time or countdown is.  Each element has a
 specific "id=" attribute in order to locate it within the page.  One
-thing to note about this is, there are complete data structures (one
-object unimaginatively named "st" with several "sub-"objects as
-members) attached to these (HTML) elements.  The author tried to
+thing to note about this is, there are complete data structures
+attached to these (HTML) elements (one object unimaginatively named
+"st" with several "sub-"objects as members).  The author tried to
 follow the idea that app-specific data attached to elements should be
 named "data-*", but as it turns out, with Web browsers at the time
 this was begun, these are of type "DOMStringMap".  Therefore, the
-"beautiful" and carefully constructed object was turned into simply
-the string "[object Object]"!  Accessing members, even through
+"beautiful" and carefully constructed object was turned into the
+string "[object Object]"!  Accessing members, even through
 someid.dataset.st.something, will therefore fail miserably.
 
 A goal of this code is to have an accurate display of time, within a
@@ -155,23 +155,27 @@ new Date() and the program's concept of real time.  This is intended
 to account for not only any difference between the system's time and
 the desired timebase (for example the system clock is, say, 3 seconds
 too slow), but also the "phase angle" of when stuff gets done (for
-example if updates every second take, say, 30 ms to process, we can
-fire our tick somewhere around 30 ms BEFORE ToS).  This is the value
-the internals use, provided by getNewDate() to centralize this.
-Ordinarily, the program should not call new Date() (no arguments)
-directly for this reason; all "decisions" should be make with
-globalRealOff already applied.
+example if updates every second take, say, 200 ms to process, we can
+have our tick somewhere around 180 ms BEFORE ToS by setting
+globalRealOff to around -180).  This is the value the internals use,
+provided by getNewDate() to centralize this.  Ordinarily, the program
+should not call new Date() (no arguments) directly for this reason;
+all "decisions" should be make with globalRealOff already applied.
 
+An as yet unimplemented use for this could be a button when
+tapped/clicked could skip to the next segment in order to time a
+show while prerecording it.
 
 Next, there is also the variable "dispoff", the display offset in
 milliseconds (also can be positive or negative).  This is different
 from globalRealOff, in that it really affects only the DISPLAY of
 information, not the information itself.  In other words, again, the
 timing of what's displayed is with globalRealOff applied but what is
-actually on the page is influenced by dispoff.  As an example, there
-is an approximately 10 second buffer for the TWiT audio-only live
-stream, so to sync with what's heard, dispoff can be set to 10000 to
-shift the display forward 10 seconds.  Again, as an example, the show
-starts at 14:05:20 Eastern (40 seconds before OTA time of 14:06:00),
-but the audio for the show start won't be HEARD until 14:05:30.
+actually seen on the page is influenced by dispoff.  As an example,
+there is an approximately 10 second buffer for the TWiT audio-only
+live stream, so to sync with what's heard, dispoff can be set to 10000
+to shift the display forward 10 seconds.  Again, as an example, the
+show starts at 14:05:20 Eastern (40 seconds before OTA time of
+14:06:00), but the audio for the show start won't be HEARD until
+14:05:30.
 
