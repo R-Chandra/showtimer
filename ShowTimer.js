@@ -250,6 +250,14 @@ function add_events(unixms, begend) {
     // event table.  "begend" tells whether these events are being
     // appended for the transition states beginning ("b") a break or
     // ending ("e") a break.
+    //
+    // TODO: look for events and either not add them or delete them if
+    // events which are appended for an etab[].begin would overlap the
+    // previous events for the previous etab[].end
+
+    // debatable here whether the timings should come from showRef
+    // (wherever it points) or the timer object itself (e.g.,
+    // tmtilbreak)
 
     var soon = showRef.st.soon;
     var vsoon = showRef.st.verysoon;
@@ -317,7 +325,11 @@ function ST_init(argv) {
 
     // initialize a session.  This involves attaching event listeners
     // to the controls, finding some of the elements, setting the
-    // beginning time of the show, 
+    // beginning time of the show, fetching the breaks/reminders,
+    // building the events list from those breaks, attaching a Show
+    // Timer (st) object to the timing elements, determining the state
+    // of the show based on the current time (we may have had to
+    // restart mid-show), and kick off the seconds ticking.
 
     var i, l, o, now, unixnow;
     var b;
@@ -455,6 +467,8 @@ function ST_init(argv) {
 // timenow.innerHTML = "This worked.";
 
 function updDbg(newLvl) {
+    // This receives the change event from the blank used to
+    // dynamically update the debugging level
     var lvl = parseInt(newLvl);
     dbug = lvl;
     console.log("++++++++New debug level (dbug) set to "+dbug+".");
@@ -462,6 +476,8 @@ function updDbg(newLvl) {
 }
 
 function updFudge(ffactObj) {
+    // This receives the change event from the blank used to
+    // dynamically update the display timing fudge factor
     if ( ffactObj.value == "" ) {
 	ffactObj.value = "0";
     }
@@ -554,6 +570,13 @@ function tmupd(blk) {
 }
 
 function begin_stop_within_tick(currTime) {
+    // This gets called from an appropriate place within slow tick()
+    // when something has set the "stopping" Boolean to true.  It
+    // essentially shuts everything down by clearing the tick then
+    // cleaning up anything on the display, such as stopping blinking
+    // and so forth.  Then it turns a lot of the elements red,
+    // indicating "stop".
+
     window.clearInterval(slowTickerObj);
     slowTickerObj = null;
     tmupd(timenow, currTime);
@@ -584,6 +607,10 @@ function begin_stop_within_tick(currTime) {
 }
 
 function updTmObjs(nowtm) {
+
+    // update timer objects.  Its main job is to update the dtobj
+    // (date/time object) according to its prescribed offset from real
+    // time, so that something can take this and update the display.
     
     var unixtm = nowtm.getTime();
 
@@ -611,7 +638,28 @@ function updTmObjs(nowtm) {
 
 
 function slow_tick(tol) {
-    var now = getNewDate();
+
+    // This is the receiver of the "main" timer tick (setInterval())
+    // event.  "tol" specifies the tolerance in ms that the system
+    // will tolerate before declaring that the display is out of sync
+    // and therefore needs a resync.  That's done by fetching the time
+    // and seeing how many milliseconds past top-of-second have
+    // occurred.  (Reminder, this needs to apply the global timing
+    // offset, so it does not call new Date() directly for that.)
+    // It needs this parameter in case it needs to go back to fast
+    // ticking, to "feed the current tolerance figure back in."  After
+    // determining the time until the next begin/break/back-to-show
+    // event, it also detects if we have met or exceeded the next
+    // event in the event queue (or TODO: put up the next reminder at
+    // an appropriate time), and initiate processing (changing colors,
+    // initiating or ending blinking, etc.) for an event if it's been
+    // reached or passed.  Also, just for monitoring purposes, it
+    // measures and displays how many milliseconds it is spending in
+    // this tick handler, which might be used to tune the global
+    // timing offset or the display offset.
+
+
+    Var now = getNewDate();
     // next variable strictly for stats
     var entryTime = now.getTime();
     // get the msecs right away
@@ -729,6 +777,11 @@ function slow_tick(tol) {
 
 function time_from_millis(millis, obj) {
 
+    // given "millis" milliseconds, set the hours, minutes, and
+    // seconds for the date/time object (dtobj) in "obj".  Since this
+    // is intended to show countdowns, if the answer is negative,
+    // return right away and thus refuse to convert it.
+
     var tgt;
     var t = millis;
     var secs;
@@ -759,6 +812,13 @@ function time_from_millis(millis, obj) {
 }
 
 function fasttick(tol) {
+
+    // This function receives the setInterval() event for rapid
+    // ticking, trying to set off a slower, once per second tick, but
+    // only after the top-of-second (ToS), withing "tol" (tolerance)
+    // milliseconds past the ToS.  This is after applying the global
+    // timing offset, so new Date() is not called directly.
+
     var now = getNewDate();
     var msecs = now.getMilliseconds();
 
@@ -775,12 +835,20 @@ function fasttick(tol) {
 	chg_color(timenow, timenow.st.color.onAir.fg);
 	// with "", do whatever CSS says?
 	// chg_color(timenow, "");
-	// show an update before the interval "fires"
+	// show an update before the slow interval "fires"
 	slow_tick(tol);
     }
 }
 
 function sync2ToS(tolerance) {
+
+    // This changes the displays slightly to indicate we're out of
+    // sync, then starts up the fast ticking timer, handing it
+    // "tolerance" ms as the timing tolerance goal.  It'll stop any
+    // fast ticking in progress to start anew, but if the global
+    // "syncing" is set, it won't try to sync again, it'll simply
+    // return because a sync2ToS is already in progress.  The default
+    // for "tolerance" is 75 ms.
 
     if ( syncing ) {
 	console.warn("already resyncing");
@@ -810,7 +878,8 @@ function sync2ToS(tolerance) {
 }
 
 
-
+// make sure the timenow page element was found, and
+// set the program in motion if so.
 if (timenow !== null ) {
     ST_init();
 }
