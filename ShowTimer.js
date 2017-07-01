@@ -223,8 +223,8 @@ function stObj(parentObj) {
     // not that we'd split hairs (really only timing to a second), but
     // to avoid lots of multiplies by 1000 in the tick handler, express
     // times in seconds, but ST_init() will make these milliseconds.
-    this.soon = 30;
-    this.verysoon = 10;
+    this.soon = 60;
+    this.verysoon = 30;
     this.bumplen = 30; // how long the BUMP_IN state lasts
     this.parent = parentObj;
 
