@@ -104,6 +104,9 @@ function commit2localStorage(clickevt) {
 }
 
 function find_fields(hobj) {
+
+    // Find all the working fields in the HTML object "hobj"
+
     var b;
 
     dbg(0, "finding fields");
@@ -147,6 +150,9 @@ function find_fields(hobj) {
 
 function upd_local(evt) {
 
+    // update the local begin time based on receiving the change event
+    // described by "evt"
+
     var blk;
     var beg;
 
@@ -156,6 +162,12 @@ function upd_local(evt) {
 }
 
 function prepare_break_form(pgnode) {
+
+    // Given the HTML page node "pgnode", prepare it for use by
+    // attaching the change and click event handlers to the
+    // appropriate sub-elements.  If by some programming chance there
+    // are events already attached, remove these event listeners.
+
 
     var i, l;
     var pgelt; // page elements within pgnode (input fields)
@@ -228,6 +240,11 @@ function prepare_break_form(pgnode) {
 
 
 function ins_blank_brk() {
+
+    // Create a blank break form so when filled in and saved, can be
+    // added to the brk[] array (which will eventually be committed to
+    // localStorage)
+
     var pgblk;
     var nbrk = new Object();
     var i, l;
@@ -254,9 +271,10 @@ function ins_blank_brk() {
 }
 
 function refresh_breaks(ret) {
+
     // refresh the nodes on the page with the current brk[] list
-    // optional parameter "ret" is the HTML node corresponding
-    // to brk[ret]
+    // optional parameter "ret" is the HTML node corresponding to
+    // brk[ret] (primarily so a message can be put in that HTML block)
 
     var nbrk;
     var i, l;
@@ -290,6 +308,10 @@ function refresh_breaks(ret) {
 }
 
 function repl_brk_adding_hr(evt) {
+
+    // This is the click event receiver ("evt") for the "dup + 1 hr"
+    // button, so "replicate break, adding one hour"
+
     var brkelt;
     var brkidx;
     var beg, end;
@@ -325,8 +347,10 @@ function clear_msg_after_delay(txtnode) {
 
 
 function clear_txt(where) {
-    // intended for the callback of a setTimeout() to clear text after a time
-    // The node could disappear before it times out, so catch the error
+
+    // intended for the callback of a setTimeout() to clear text after
+    // a time has elapsed. The node could disappear before it times
+    // out, so catch the error
 
     try {
 	where.textContent = "";
@@ -338,6 +362,10 @@ function clear_txt(where) {
 }
 
 function flag_unsaved(evt) {
+
+    // This changes the appearance of an altered break entry so that
+    // it is visually apparent that it needs to be saved.  Also
+    // unsurprisingly, this activates the "undo" button.
 
     var blk;
 
@@ -355,6 +383,9 @@ function flag_unsaved(evt) {
 
 function perform_undo(evt) {
     
+    // back out any changes made to the break input.  This is the
+    // receiver of a button click event "evt"
+
     var brkelt;
     var brkidx;
 
@@ -366,6 +397,13 @@ function perform_undo(evt) {
 }
 
 function save_to_brk(evt) {
+
+    // This receives the click event "evt" when the user clicks on the
+    // "save" button for a break.  It will update fields and displays
+    // as required, do some minimal error checking, and save it to the
+    // brk array.  Then the display gets updated by "redrawing all the
+    // breaks" with refresh_breaks().
+
     var brkelt;
     var brkidx;
     var beg, end;
@@ -430,6 +468,8 @@ function chkBrkLen(hobj, val) {
 
 function calc_end(evt) {
 
+    // This receives the click event "evt" from a "calc" button
+
     var calcreq; // string (from button) of what type of calc was requested
     var brkelt; // HTML <div> element of break to do calcs
     var brkidx; // index into brk[] for this break
@@ -481,6 +521,12 @@ function calc_end(evt) {
 
 
 function delete_brk(evt) {
+
+    // This receives the click event "evt" from clicking a "DELETE!"
+    // button, and removes this from brk[], and updates the page.  At
+    // least for now, such a deletion is always confirmed (but I know
+    // this can be tedious having to OK each deletion).
+
     var brkelt;
     var brkidx;
 
@@ -538,6 +584,12 @@ function populate_page(ret) {
 }
 
 function handle_fetch(evt) {
+
+    // This receives the click event "evt" from clicking on the
+    // "fetch" button, meant to fetch a profile from localStorage.  It
+    // will optionally retrieve the previously committed profile by
+    // appending "_bak" if the checkbox is checked.
+
     var i, l;
     var brklist;
     var profstr;
