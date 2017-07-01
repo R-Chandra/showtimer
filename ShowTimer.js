@@ -659,7 +659,7 @@ function slow_tick(tol) {
     // timing offset or the display offset.
 
 
-    Var now = getNewDate();
+    var now = getNewDate();
     // next variable strictly for stats
     var entryTime = now.getTime();
     // get the msecs right away
