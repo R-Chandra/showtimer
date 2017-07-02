@@ -58,7 +58,7 @@ const BEFORE_SHOW = 0,
 // the next show.  But SHOW_DONE marks the end of the precomputed
 // events table.
 
-function dbg(lvl, ...msg) {
+function dbg(lvl, msg) {
 
     // This function is called for debugging.  "lvl" describes the
     // intended level of the message, from lower numbers being very
@@ -71,7 +71,7 @@ function dbg(lvl, ...msg) {
     // could be negative.
 
     if ( lvl >= dbug ) {
-	console.log(lvl+": "+msg.join(" "));
+	console.log(lvl+": "+msg);
     }
     return true;
 }
