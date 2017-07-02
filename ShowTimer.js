@@ -228,7 +228,7 @@ function stObj(parentObj) {
     co.onAir = new colorObj(co, "limegreen", "black",
 				    "darkgreen", "black", 1500);
     co.soon = new colorObj(co, "yellow", "black", "", "", 500);
-    co.verysoon = new colorObj(co, "red", "black", "black", "red", 500);
+    co.verysoon = new colorObj(co, "red", "black", "black", "maroon", 500);
     // special case of "revert to CSS" styling by setting fg = bg = ""
     co.revertCSS = new colorObj(co, "", "", "", "", 1000);
     co.parent = this;
@@ -333,7 +333,26 @@ function add_events(unixms, begend) {
     // dbug = tmp;
 }
 
+function stateful_chg_color(where) {
 
+    // Based on the global showState, change the block referenced by
+    // "where" to an appropriate member of its color property.
+
+    var which = st2col(showState);
+    var hobj;
+    var colormember = where.st.color[which];
+
+    if ( typeof where.hobj === "object" ) {
+	hobj = where.hobj;
+    } else {
+	hobj = where;
+    }
+    
+    dbg(2, "stateful change color of "+hobj+" to "+
+	which+" ("+colormember.fg+")");
+    return chg_color(where, colormember);
+
+}
 
 function ST_init(argv) {
 
@@ -449,7 +468,7 @@ function ST_init(argv) {
 	dbg(2, "Unix now: "+new Date(unixnow).toTimeString());
 	while ( unixnow > etab[etabidx + 1].when &&
 		etab[etabidx + 1].state !== SHOW_DONE ) {
-	    dbg(2, "--- skipping over "+(etabidx+1)+" ("+
+	    dbg(1, "--- skipping over "+(etabidx+1)+" ("+
 		new Date(etab[etabidx].when).toString()+", "+
 		state2str(etab[etabidx].state)+")");
 	    etabidx++;
@@ -465,8 +484,8 @@ function ST_init(argv) {
     }
 
     dbg(2, " ST_init: determined show state is "+state2str(showState));
-    var newCol = st2col(showState);
-    chg_color(tmtilbreak, tmtilbreak.st.color[newCol].fg);
+
+    stateful_chg_color(tmtilbreak);
 
     // think this upd is done in slow tick() anyway. Times were that
     // this was not the case, but it was added later
@@ -498,6 +517,22 @@ function updFudge(ffactObj) {
     dispoff = parseInt(ffactObj.value);
     ffactObj.value = dispoff;
     dbg(-8, "updFudge(): 'this' is "+this+" and myself is "+updFudge);
+}
+
+function updGlobalTiming(newval) {
+
+    // This function receives the change event for changing the global
+    // timing offset (globalRealOff), to set it to "newval"
+
+    var globalTmOff = parseInt(newval);
+
+    if ( isNaN(globalTmOff) ) {
+	console.warn("tried to set global timing offset to non-numeric: "+newval)
+	return false;
+    }
+
+    globalRealOff = globalTmOff;
+
 }
 
 function chg_color(obj, newcolor) {
@@ -739,8 +774,8 @@ function slow_tick(tol) {
 		nxtVisEvt = IN_BREAK;
 	    }
 	    i = etabidx;
-	    dbg(2, "seeking from "+newState+" to "+nxtVisEvt);
-	    dbg(2, " (from "+state2str(newState)+" to "+
+	    dbg(2, "seeking from "+newState+" to "+nxtVisEvt+
+		" (from "+state2str(newState)+" to "+
 		state2str(nxtVisEvt)+")");
 	    while ( etab[i].state !== nxtVisEvt &&
 		    etab[i].state !== SHOW_DONE ) {
@@ -749,11 +784,10 @@ function slow_tick(tol) {
 	    nxtbreaktm.st.dtobj = new Date(etab[i].when);
 	}
 
-	var newCol = st2col(newState);
-	chg_color(tmtilbreak, tmtilbreak.st.color[newCol]);
-
 	showPrevState = showState;
 	showState = newState;
+
+	stateful_chg_color(tmtilbreak);
 
 	if ( newState === BUMP_VERY_SOON ||
 	     newState === TIME_VERY_SHORT ) {
@@ -846,10 +880,9 @@ function fasttick(tol) {
 	dbg(3, "Sync established.");
 	syncing = 0;
 	slowTickerObj = window.setInterval(slow_tick, 1000, tol);
-	chg_color(timenow, timenow.st.color.onAir.fg);
-	// with "", do whatever CSS says?
-	// chg_color(timenow, "");
-	// show an update before the slow interval "fires"
+	stateful_chg_color(timenow);
+	stateful_chg_color(tmtilbreak);
+	// show an update before the slow interval "ticks"
 	slow_tick(tol);
     }
 }
@@ -875,7 +908,8 @@ function sync2ToS(tolerance) {
 	 tolerance == undefined ) {
 	tolerance = 75;
     }
-    chg_color(timenow, timenow.st.color.oos.fg);
+    chg_color(timenow, timenow.st.color.oos);
+    chg_color(tmtilbreak, tmtilbreak.st.color.oos);
     syncing = 1;
 
     var interval = 20;

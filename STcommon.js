@@ -296,8 +296,6 @@ function state2str(st) {
     }
 }
 
-
-
 function st2col(st) {
 
     // For state "st", which member of st.color should be
@@ -305,15 +303,15 @@ function st2col(st) {
     // is out of range, let CSS take over by returning "".
 
     const statetab =
-	  [ "revertCSS",
-	    "onAir",
-	    "onAir",
-	    "soon",
-	    "verysoon",
-	    "revertCSS",
-	    "soon",
-	    "verysoon",
-	    "revertCSS"
+	  [ "revertCSS", //"BEFORE_SHOW"
+	    "onAir",     //"BUMP_IN"
+	    "onAir",     //"ON_AIR"
+	    "soon",      //"TIME_SHORT"
+	    "verysoon",  //"TIME_VERY_SHORT"
+	    "revertCSS", //"IN_BREAK"
+	    "soon",      //"BUMP_SOON"
+	    "verysoon",  //"BUMP_VERY_SOON"
+	    "revertCSS"  //"SHOW_DONE"
 	  ];
 
     if ( st < BEFORE_SHOW ||
