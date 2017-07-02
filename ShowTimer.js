@@ -239,7 +239,7 @@ function stObj(parentObj) {
     // times in seconds, but ST_init() will make these milliseconds.
     this.soon = 60;
     this.verysoon = 30;
-    this.bumplen = 30; // how long the BUMP_IN state lasts
+    this.bumplen = 25; // how long the BUMP_IN state lasts
     this.parent = parentObj;
 
     this.dtobj = new Date(0);
