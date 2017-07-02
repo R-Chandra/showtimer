@@ -19,44 +19,51 @@ var globalRealOff = 0;
 // runtime, e.g. by invoking a Web service or something.
 // Zero in effect means, "assume local clock is accurate"
 
-var OTAoff = 40;
-var showRef;
-showRef = otatime;
-var brk;
-var brkidx = -1;
-var remind = new Array();
-var showBegin;
+var OTAoff = 40; // offset from real time to over the air
+var showRef;     // the show reference time, whether local, UTC, etc.
+showRef = otatime; // by default, make it OTA time
+var brk;  // the list (array) of breaks
+var brkidx = -1;  // index into brk for the current upcoming break
+var remind = new Array(); // reminders (displayed in the message area)
+var showBegin;   // date/time of the show's beginning
 showBegin = getNewDate();
 
 // we'll assume the show begins today...
+// This embedded time is US/Eastern for "Léo Laporte, The Tech Guy"
 showBegin.setHours(14);
 showBegin.setMinutes(6);
 showBegin.setSeconds(0);
 showBegin.setMilliseconds(0);
 
+// The following was to facilitate debugging of show open
 // showBegin.setHours(new Date().getHours());
 // showBegin.setMinutes(new Date().getMinutes()+2);
 
 
-var showState;
+var showState;  // in break, on the air, break is soon, etc.
 var showPrevState; // helps with transitions
-var showLen;
-var showEnd;
+var showLen;  // show length in seconds
+var showEnd;  // calculated show end in milliseconds (compare with .getTime())
 // 16:57:50 - 14:06:00 = 10310 seconds
 showLen = 10310;
 var etab = new Array(); // event table
 var etabidx; // current index into etab; advanced when time > etab[].when
 
+// timing objects
 var tmobj = [ utc, timenow, otatime, nxtbreaktm, tmtilbreak ];
 
+// opaque data type of return of setInterval(); may or may not truly be an object
+// Just depends on browser implementation
 var fastTickerObj = null;
 var slowTickerObj = null;
+
+// set this to true when you want the slow tick() routine to shut down the app
 var stopping = false;
-var outOfTolCnt = 0;
-var syncing = 0;
-var dispoff = 0;
-var showMillis = false;
-var elapsedStat;
+var outOfTolCnt = 0; // out of timing tolerance count
+var syncing = 0; // in the process of syncing to top-of-second
+var dispoff = 0; // display of time offset in milliseconds, can be negative
+var showMillis = false; // should milliseconds be displayed?
+var elapsedStat;  // place to store elapsed time statistic
 
 function getNewDate() {
     // get the current time (new Date()), apply the timing offset
@@ -67,9 +74,13 @@ function getNewDate() {
     return dobj;
 }
 
+// correct the show start time for local timezone
 showBegin.setHours(14+get_show_start_hour_offset());
 
 function stopST(evt) {
+
+    // This routine receives the click event of the stop button
+
     // There is the global variable "stopping" because if we're in the
     // unsynchronized state, there will be the fast ticking routine
     // going on, which may asynchronously set the slow ticker.  It's
@@ -82,8 +93,12 @@ function stopST(evt) {
     stopping = true;
 }
 
+const BLINK_NORM = 0, // blink state normal fg/bg colors
+      BLINK_BLINK = 1; // blink state alternate colors
+
 function handle_blink(which) {
-    // A color object has severl members for what state one wants to
+
+    // A color object has several members for what state one wants to
     // be presented, so "which" points to one of the members (oos,
     // onAir, soon, etc.).  This makes the time displayed by the HTML
     // block enclosing "which" to appear to blink by alternating
@@ -109,11 +124,13 @@ function handle_blink(which) {
 }
 
 function beginBlink(which) {
-    // Initiate blinking of the style "which".  As the color object
-    // has links to the parent object, we can find the HTML block
-    // which needs the .style.color... attributes changed.
 
-    var tmr = which.blink.timer; // not a ref, only current value!!
+    // Initiate blinking of the style "which" (soon, verysoon, etc.).
+    // As the color object has links to the parent object, we can find
+    // the HTML block which needs its .style.color... attributes
+    // changed.
+
+    var tmr = which.blink.timer; // not a ref to this property, only current value!!
     var period = which.blink.millis;
 
     // might happen that we call this twice; cancel any blinking and
@@ -154,9 +171,6 @@ function chg_milli_state(evt) {
 
     return true;
 }
-
-const BLINK_NORM = 0, // blink state normal fg/bg colors
-      BLINK_BLINK = 1; // blink state alternate colors
 
 function colorObj(parentObj, fg, bg, blinkfg, blinkbg, blinkmilli) {
 
