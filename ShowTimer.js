@@ -3,17 +3,6 @@
 
 dbug = 2;
 
-var timenow = document.getElementById("timenow");
-if ( timenow === null ) {
-    alert("Huh? What happened to the 'timenow' <div>?");
-}
-
-
-var utc = document.getElementById("UTC");
-var otatime = document.getElementById("OTAtime");
-var nxtbreaktm = document.getElementById("nxtbreak");
-var tmtilbreak = document.getElementById("tilbreak");
-
 var globalRealOff = 0;
 // global real offset; starts at zero, MAY be calculated at
 // runtime, e.g. by invoking a Web service or something.
@@ -218,8 +207,7 @@ function stObj(parentObj) {
     // constructor for the "Show Timer" (st) object.
     //
     // We send in the parent node object so that we can limit the
-    // scope of querySelector() to only this object (not sure if
-    // this.parentNode gets us where we need to be)
+    // scope of querySelector() to only this object
 
     var co = new Object();
     // characteristics for out of synchronization
@@ -348,7 +336,7 @@ function stateful_chg_color(where) {
 	hobj = where;
     }
     
-    dbg(2, "stateful change color of "+hobj+" to "+
+    dbg(1, "stateful change color of "+hobj+" to "+
 	which+" ("+colormember.fg+")");
     return chg_color(where, colormember);
 
@@ -367,6 +355,8 @@ function ST_init(argv) {
     var i, l, o, now, unixnow;
     var b;
     var showBeginMs;
+    var timernode;
+    var timername;
 
     now = getNewDate();
 
@@ -375,6 +365,16 @@ function ST_init(argv) {
     stopping = false;
 
     elapsedStat = document.getElementById("tickHandleTime");
+
+    etab = new Array();
+    etabidx = 0;
+
+    timernode = document.querySelectorAll("[data-st-type=timer]");
+    for ( o of timernode ) {
+	timername = o.getAttribute("id");
+	// unqualified variable names are properties of "window"
+	window[timername] = document.getElementById(timername);
+    }
 
     // In case someone (a developer in the debugger?) restarts the
     // app, make sure the default background returns
@@ -492,6 +492,8 @@ function ST_init(argv) {
     // tmupd(nxtbreaktm);
 
     sync2ToS();
+
+    tmupd(nxtbreaktm);
 
     dbg(0, "leaving ST_init");
 
@@ -639,7 +641,7 @@ function begin_stop_within_tick(currTime) {
 	    if ( c !== "currentColor" &&
 		 c !== "parent" ) {
 		var bstop = o.st.color[c];
-		dbg(2, "stop blink on "+bstop+" which is "+c);
+		dbg(1, "stop blink on "+bstop+" which is "+c);
 		endBlink(bstop);
 	    }
 	}
@@ -649,7 +651,7 @@ function begin_stop_within_tick(currTime) {
     but.textContent = "Stopped.";
     chg_color(timenow, "red");
     chg_color(tmtilbreak, "red");
-    document.getElementsByTagName("body")[0].style.background = "rgb(40,0,0)";
+    document.body.style.background = "rgb(40,0,0)";
     console.log("***+++*** Shutdown @ "+
 		currTime.toString()+
 		" ***+++***");
@@ -746,8 +748,6 @@ function slow_tick(tol) {
     tmupd(timenow);
     tmupd(otatime);
 
-    tmupd(nxtbreaktm);
-
     unixms = showRef.st.dtobj.getTime();
     dbg(1, "   deciding at "+etabidx+": "+unixms);
     dbg(1, "                  "+etab[etabidx].when);
@@ -807,6 +807,8 @@ function slow_tick(tol) {
 	}
 
 	etabidx++;
+	tmupd(nxtbreaktm);
+
     }
 
     toNxtEvt = nxtbreaktm.st.dtobj.getTime() - showRef.st.dtobj.getTime();
@@ -894,8 +896,9 @@ function sync2ToS(tolerance) {
     // "tolerance" ms as the timing tolerance goal.  It'll stop any
     // fast ticking in progress to start anew, but if the global
     // "syncing" is set, it won't try to sync again, it'll simply
-    // return because a sync2ToS is already in progress.  The default
-    // for "tolerance" is 75 ms.
+    // return because a sync2ToS is already in progress.
+    //
+    // The default for "tolerance" is 100 ms.
 
     if ( syncing ) {
 	console.warn("already resyncing");
@@ -906,7 +909,7 @@ function sync2ToS(tolerance) {
     if ( toltype == undefined ||
 	 toltype == null ||
 	 tolerance == undefined ) {
-	tolerance = 75;
+	tolerance = 100;
     }
     chg_color(timenow, timenow.st.color.oos);
     chg_color(tmtilbreak, tmtilbreak.st.color.oos);
@@ -926,10 +929,7 @@ function sync2ToS(tolerance) {
 }
 
 
-// make sure the timenow page element was found, and
-// set the program in motion if so.
-if (timenow !== null ) {
-    ST_init();
-}
+
+ST_init();
 
 

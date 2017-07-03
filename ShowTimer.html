@@ -3,6 +3,8 @@
   <head>
     <title>Show Timer</title>
     <meta charset="UTF-8">
+<!--    <meta http-equiv="Content-Security-Policy"
+	  content="default-src *; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://hal9002.philipps.us"> -->
     <!-- <link href="https://fonts.googleapis.com/css?family=Vibur|Mogra" rel="stylesheet"> -->
     <link rel="stylesheet" href="STcommon.css" type="text/css" />
     <link rel="stylesheet" href="ShowTimer.css" type="text/css" />
@@ -19,7 +21,7 @@
 	    <!-- local time of next break/event -->
 
 	    <td>
-	      <table id="nxtbreak" class="tdisp">
+	      <table id="nxtbreaktm" class="tdisp" data-st-type="timer">
 		<tr>
 		  <td data-st-role="hr">--</td>
 		  <td>:</td>
@@ -37,7 +39,8 @@
 	  </tr>
 	  <tr> <!-- hours:minuts:seconds until next break or event -->
 	    <td>
-	      <table id="tilbreak" class="tdisp countdown">
+	      <table id="tmtilbreak" class="tdisp countdown"
+		     data-st-type="timer">
 		<tr><td data-st-role="hr">--</td>
 		  <td>:</td>
 		  <td data-st-role="min">--</td>
@@ -62,7 +65,8 @@
 
 	      <!-- UTC real time clock (RTC) -->
 
-	      <table id="UTC" class="mainclock tdisp wallclock">
+	      <table id="utc" class="mainclock tdisp wallclock"
+		     data-st-type="timer">
 		<tr>
 		  <td data-st-role="hr">--</td>
 		  <td>:</td>
@@ -82,7 +86,7 @@
 	    <!-- display of local time -->
 
 	    <td>
-	      <table id="timenow" class="mainclock tdisp">
+	      <table id="timenow" class="mainclock tdisp" data-st-type="timer">
 		<tr>
 		  <td data-st-role="hr">--</td>
 		  <td>:</td>
@@ -103,7 +107,7 @@
 	    <!-- display of over the air (OTA) time -->
 	    
 	    <td>
-	      <table id="OTAtime" class="mainclock tdisp">
+	      <table id="otatime" class="mainclock tdisp" data-st-type="timer">
 		<tr>
 		  <td data-st-role="hr">--</td>
 		  <td>:</td>
@@ -121,13 +125,20 @@
 	  </tr>
 	  <tr>
 	    <td colspan="2" class="reminder">
-	      <div id="remindermsg">
-		&nbsp;
+	      <!-- make this a "timer" so that we can make it blink -->
+	      <div id="remindermsg" data-st-type="timer">
+		<div data-st-role="hr"></div>
+		<span data-st-role="min"></span>
+		<span data-st-role="sec"></span>
+		<span data-st-role="millis"></span>
 	      </div>
 	    </td>
 	  </tr>
 	</tbody>
       </table>
+<!--		<button id="dismissMsg">dismiss</button>
+		A message for stuff
+-->
       <div id="stats">
 	<br />
 	<span>Time taken in tick handler:&nbsp;</span><span id="tickHandleTime">-</span>

@@ -40,8 +40,8 @@ td {
      has to be present.  Just make it invisible.
 */
 
-#tilbreak [data-st-role="millis"],
-#tilbreak td:nth-child(6){
+#tmtilbreak [data-st-role="millis"],
+#tmtilbreak td:nth-child(6){
     display: none;
 }
 
@@ -106,4 +106,16 @@ table {
     color: white;
     background: black;
     border: 2px white solid;
+}
+
+/* We set up the reminders area as a timer object so that we can make
+it flash easily, so therefore it must have the hr, min, etc. elements
+*/
+
+#remindermsg [data-st-role] {
+    display: none;
+}
+
+#remindermsg {
+    height: 1em;
 }
