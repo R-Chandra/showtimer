@@ -39,7 +39,7 @@ var etab = new Array(); // event table
 var etabidx; // current index into etab; advanced when time > etab[].when
 
 // timing objects
-var tmobj = [ utc, timenow, otatime, nxtbreaktm, tmtilbreak ];
+var tmobj;
 
 // opaque data type of return of setInterval(); may or may not truly be an object
 // Just depends on browser implementation
@@ -224,7 +224,7 @@ function stObj(parentObj) {
     this.color = co;
     // not that we'd split hairs (really only timing to a second), but
     // to avoid lots of multiplies by 1000 in the tick handler, express
-    // times in seconds, but ST_init() will make these milliseconds.
+    // times in seconds, but ST init() will make these milliseconds.
     this.soon = 60;
     this.verysoon = 30;
     this.bumplen = 25; // how long the BUMP_IN state lasts
@@ -342,6 +342,33 @@ function stateful_chg_color(where) {
 
 }
 
+function set_reminder(remTxt) {
+
+    // set the reminder portion of the page to reminder text "remTxt"
+    // This is the setter function for remindermsg.txt
+
+    remindermsg.textContent = remTxt;
+    remindDismiss.style.visibility = "visible";
+    beginBlink(remindermsg.st.color.onAir);
+}
+
+function get_reminder() {
+
+    return remindermsg.textContent;
+
+}
+
+function handle_dismiss(evt) {
+
+    // handle the click event "evt" on the dismiss reminder button
+
+    var t = evt.target;
+
+    endBlink(remindermsg.st.color.onAir);
+    remindermsg.textContent = "";
+    t.style.visibility = "hidden";
+}
+
 function ST_init(argv) {
 
     // initialize a session.  This involves attaching event listeners
@@ -375,11 +402,13 @@ function ST_init(argv) {
 	// unqualified variable names are properties of "window"
 	window[timername] = document.getElementById(timername);
     }
+    tmobj = timernode;
 
     // In case someone (a developer in the debugger?) restarts the
     // app, make sure the default background returns
     document.body.style.background = "";
 
+    // likewise change the label on the stop button
     o = document.getElementById("stopST");
     o.addEventListener("click", stopST, false);
     o.textContent = "STOP!";
@@ -387,12 +416,15 @@ function ST_init(argv) {
     o = document.getElementById("showms");
     o.addEventListener("change", chg_milli_state, false);
 
+    // Make the input field contents show what the program really
+    // thinks to what those variables are set
     o = document.getElementById("dbgChanger");
     o.value = dbug;
 
     o = document.getElementById("fudge");
     o.value = dispoff;
 
+    // initialize all the timer blocks
     l = tmobj.length;
     for ( i = 0; i < l; i++ ) {
 	o = tmobj[i];
@@ -405,14 +437,29 @@ function ST_init(argv) {
     }
 
     timenow.st.dtobj = new Date(now.getTime());
+
     utc.st.offFromReal = timenow.st.dtobj.getTimezoneOffset() * 60;
 
     otatime.st.offFromReal = OTAoff;
-    otatime.st.color.onAir.fg = ""; // fallback to CSS
-    otatime.st.color.onAir.bg = ""; // fallback to CSS
+    otatime.st.color.onAir.fg = ""; // fall back to CSS
+    otatime.st.color.onAir.bg = ""; // fall back to CSS
 
-    nxtbreaktm.st.color.onAir.fg = ""; // fallback to CSS
-    nxtbreaktm.st.color.onAir.bg = ""; // fallback to CSS
+    nxtbreaktm.st.color.onAir.fg = ""; // fall back to CSS
+    nxtbreaktm.st.color.onAir.bg = ""; // fall back to CSS
+
+    // set up the reminder area
+    remindDismiss = document.getElementById("remindDismiss");
+    remindDismiss.addEventListener("click", handle_dismiss, false);
+    remindermsg.st.color.onAir.fg = "white";
+    // "gray" does not provide enough contrast from "white"
+    remindermsg.st.color.onAir.blink.fg = "#404040";
+    Object.defineProperty(remindermsg,
+			  "txt",
+			  {
+			      enumerable: true,
+			      get: get_reminder,
+			      set: set_reminder
+			  });
 
     showBeginMs = showBegin.getTime();
     showEnd = showBeginMs + showLen * 1000;
@@ -420,10 +467,12 @@ function ST_init(argv) {
     // ... but if the show is alreay over, it must be tomorrow
     if ( now.getTime() > showEnd ) {
 	showBegin.setDate(showBegin.getDate() + 1);
-	showEnd = showBegin.getTime() + showLen * 1000;
+	showBeginMs = showBegin.getTime();
+	showEnd = showBeginMs + showLen * 1000;
     }
-    showBeginMs = showBegin.getTime();
 
+    // The beginning of the show timing-wise and event-wise is like
+    // coming back from (ending) a (really long) break.
     add_events(showBeginMs, "e");
 
     brk = load_breaks("techguy_breaks");

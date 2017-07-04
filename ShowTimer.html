@@ -125,22 +125,24 @@
 	  </tr>
 	  <tr>
 	    <td colspan="2" class="reminder">
+	      <button id="remindDismiss">dismiss</button>
 	      <!-- make this a "timer" so that we can make it blink -->
-	      <div id="remindermsg" data-st-type="timer">
-		<div data-st-role="hr"></div>
+	      <span id="remindermsg" data-st-type="timer">
+		<span data-st-role="hr"></span>
 		<span data-st-role="min"></span>
 		<span data-st-role="sec"></span>
 		<span data-st-role="millis"></span>
-	      </div>
+	      </span>
 	    </td>
 	  </tr>
 	</tbody>
       </table>
-<!--		<button id="dismissMsg">dismiss</button>
-		A message for stuff
--->
+      <!--		<button id="dismissMsg">dismiss</button>
+			A message for stuff
+	-->
+      <br />
+      <hr />
       <div id="stats">
-	<br />
 	<span>Time taken in tick handler:&nbsp;</span><span id="tickHandleTime">-</span>
 	<br />
 	<br />

@@ -119,3 +119,12 @@ it flash easily, so therefore it must have the hr, min, etc. elements
 #remindermsg {
     height: 1em;
 }
+
+#remindDismiss {
+    visibility: hidden;
+    /* putting a button in that box makes it blend in with the
+	white border around the last table row, so increase margin
+     */
+    margin-bottom: 15px;
+    margin-left: 5px;
+}
