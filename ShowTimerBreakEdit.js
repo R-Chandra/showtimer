@@ -66,6 +66,36 @@ function slurp_export_area() {
     refresh_breaks();
 }
 
+function verify_break_list(ol) {
+
+    // This approves the contents of "ol" as an array of .begin and
+    // .end members.  For now, it checks if there are any breaks at
+    // all, and that they do not overlap.  They can be consecutive,
+    // for example a network ad followed by local ads, but [n].end
+    // cannot occur AFTER [n+1].begin.  It returns either the null
+    // string "" (all is OK) or an error string of what went wrong.
+
+    var b, nb, i, l;
+
+    l = ol.length;
+    if ( l === 0 ) {
+	console.warn("Not useful to have an empty break list.");
+	return "no loaded breaks!!!";
+    }
+
+    l--; // always comparing with i + 1, so do not go "off the end"
+    for ( i = 0; i < l; i++ ) {
+	b = ol[i];
+	nb = ol[i + 1];
+	if ( b.end > nb.begin ) {
+	    console.warn("Breaks overlap at "+i+".");
+	    return "Breaks overlap at "+i+" and "+(i+1)+".";
+	}
+    }
+
+    return "";
+}
+
 function commit2localStorage(clickevt) {
 
     // This receives the click event from the "commit" button.
@@ -73,6 +103,7 @@ function commit2localStorage(clickevt) {
     // Then JSON.stringify the brk array and put it at "<name>_breaks"
     
     var profname = profinp.value;
+    var errmsg;
 
     dbg(1, "]]]]]] requesting commit to profile "+profname);
 
@@ -82,12 +113,13 @@ function commit2localStorage(clickevt) {
 	 profname === "" ) {
 	commitmsg.textContent = "must have a profile name to which to save!";
 	return false;
-    } else if ( brk.length === 0 ) {
-	commitmsg.textContent = "no loaded breaks to save!!!";
-	return false;
-    } else {
-	commitmsg.textContent = "";
     }
+    errmsg = verify_break_list(brk);
+    if ( errmsg !== "" ) {
+	commitmsg.textContent = errmsg;
+	return false;
+    }
+
     commitmsg.textContent = "saving backup";
     // This might throw an error if the original does not exist yet...or
     // may return "null".  When I ran it once, all I saw was the "saving backup"
