@@ -402,7 +402,18 @@ function ST_init(argv) {
 	// unqualified variable names are properties of "window"
 	window[timername] = document.getElementById(timername);
     }
-    tmobj = timernode;
+    // NodeLists are only PARTIALLY arrays.  The other part is some
+    // methods and other properties unsuitable for tmobj[], so we need
+    // to copy the "array part" to tmobj.  Otherwise tmobj will be an
+    // alias for timernode, which will wreak havoc in the "stop during
+    // slow tick" function, looping through the objs to stop any
+    // running blinking objs. "item" for example was being examined as
+    // if it had an "st" structure, when it's a NodeList method.
+    tmobj = new Array();
+    l = timernode.length;
+    for ( i = 0; i < l; i++ ) {
+	tmobj[i] = timernode[i];
+    }
 
     // In case someone (a developer in the debugger?) restarts the
     // app, make sure the default background returns
