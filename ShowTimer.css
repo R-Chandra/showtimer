@@ -45,6 +45,11 @@ td {
     display: none;
 }
 
+#nxtbreaktm {
+    font-size: x-large;
+    background: black;
+}
+
 .tdisp td {
     /* width: 14px; */
     margin: 0 auto;
@@ -76,7 +81,7 @@ table {
 .mainclock {
     font-size: medium;
     font-family: monospace;
-    color: yellow;
+    color: green;
     background: black;
 }
 

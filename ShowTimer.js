@@ -24,10 +24,12 @@ showBegin.setMinutes(6);
 showBegin.setSeconds(0);
 showBegin.setMilliseconds(0);
 
-// The following was to facilitate debugging of show open
+// The following is to facilitate debugging of show open
+// showBegin.setMinutes(new Date().getMinutes()+3);
 // showBegin.setHours(new Date().getHours());
-// showBegin.setMinutes(new Date().getMinutes()+2);
 
+// correct the show start time for local timezone
+showBegin.setHours(showBegin.getHours()+get_show_start_hour_offset());
 
 var showState;  // in break, on the air, break is soon, etc.
 var showPrevState; // helps with transitions
@@ -39,7 +41,7 @@ var etab = new Array(); // event table
 var etabidx; // current index into etab; advanced when time > etab[].when
 
 // timing objects
-var tmobj;
+var tmobj = new Array();
 
 // opaque data type of return of setInterval(); may or may not truly be an object
 // Just depends on browser implementation
@@ -63,8 +65,9 @@ function getNewDate() {
     return dobj;
 }
 
-// correct the show start time for local timezone
-showBegin.setHours(14+get_show_start_hour_offset());
+
+
+
 
 function stopST(evt) {
 
@@ -348,11 +351,23 @@ function set_reminder(remTxt) {
     // This is the setter function for remindermsg.txt
 
     remindermsg.textContent = remTxt;
-    remindDismiss.style.visibility = "visible";
-    beginBlink(remindermsg.st.color.onAir);
+    if ( remTxt !== "" ) {
+	remindDismiss.style.visibility = "visible";
+	beginBlink(remindermsg.st.color.onAir);
+    }
+    // This should probably go through the dismiss routine to do
+    // things like stop the blinking process and such.  It could be
+    // done here, but that would duplicate code, which is
+    // problematic.  But handle-dismiss() is a click event handler,
+    // sooooo...simulate a click by making an Event for it? It's
+    // starting to get complicated, so for now, ***** PUNT  *****
+
+    return true;
 }
 
 function get_reminder() {
+
+    // this is the getter function for remindermsg.txt
 
     return remindermsg.textContent;
 
@@ -360,14 +375,68 @@ function get_reminder() {
 
 function handle_dismiss(evt) {
 
-    // handle the click event "evt" on the dismiss reminder button
+    // handle the click event "evt" on the "dismiss reminder" button
 
     var t = evt.target;
 
     endBlink(remindermsg.st.color.onAir);
+    remind.shift();
     remindermsg.textContent = "";
     t.style.visibility = "hidden";
+
+    return true;
 }
+
+function prepare_reminders(profname) {
+
+    // prepare the list of reminders by fetching them from
+    // localStorage under profile name "profname" (default
+    // "techguy_reminders") and form the working list "remind" by
+    // converting the seconds in .begin to "Unix" milliseconds based
+    // on showBegin and copying the .txt member.  This is so minimal
+    // processing has to be done in the slow tick handler
+
+    var i, l;
+    var unixms;
+    var showBeginMs;
+    var remindMs;
+
+    // It's debatable if the app is restarted mid-show whether the
+    // past reminders should be skipped or have them be manually
+    // dismissed.  For example, if there is a reminder for a live read
+    // which has not been performed but the browser exits, that live
+    // read still needs to be done, eventually.  Perhaps dimissals
+    // could be logged, and based on that, skipped.  But that adds a
+    // lot of complexity.
+    //
+    // The policy will be, for now, to skip.
+
+    unixms = getNewDate().getTime();
+    showBeginMs = showBegin.getTime();
+
+    if ( typeof profname === "undefined" ||
+	 profname === null ||
+	 profname === "" ) {
+	profname = "techguy_reminders";
+    }
+
+    var remindlist = load_reminders("techguy_reminders");
+    if ( remindlist === false ||
+	 (l = remindlist.length) === 0 ) {
+	// for whatever reasons, there are no reminders
+	return false;
+    }
+
+    remind = new Array();
+    for ( i = 0; i < l; i++ ) {
+	remindMs = showBeginMs + remindlist[i].begin * 1000;
+	if ( unixms < remindMs ) {
+	    remind.push( { when: remindMs, txt: remindlist[i].txt } );
+	}
+    }
+}
+
+
 
 function ST_init(argv) {
 
@@ -377,7 +446,8 @@ function ST_init(argv) {
     // building the events list from those breaks, attaching a Show
     // Timer (st) object to the timing elements, determining the state
     // of the show based on the current time (we may have had to
-    // restart mid-show), and kick off the seconds ticking.
+    // restart mid-show), load any reminders, and kick off the seconds
+    // ticking.
 
     var i, l, o, now, unixnow;
     var b;
@@ -392,6 +462,10 @@ function ST_init(argv) {
     stopping = false;
 
     elapsedStat = document.getElementById("tickHandleTime");
+
+    if ( tmobj.length > 0 ) {
+	clr_all_blink();
+    }
 
     etab = new Array();
     etabidx = 0;
@@ -421,10 +495,18 @@ function ST_init(argv) {
 
     // likewise change the label on the stop button
     o = document.getElementById("stopST");
+    try {
+	o.removeEventListener("click", stopST, false);
+    } catch (err) {
+    }
     o.addEventListener("click", stopST, false);
     o.textContent = "STOP!";
 
     o = document.getElementById("showms");
+    try {
+	o.removeEventListener("change", chg_milli_state, false);
+    } catch (err) {
+    }
     o.addEventListener("change", chg_milli_state, false);
 
     // Make the input field contents show what the program really
@@ -460,10 +542,17 @@ function ST_init(argv) {
 
     // set up the reminder area
     remindDismiss = document.getElementById("remindDismiss");
+    try {
+	remindDismiss.removeEventListener("click", handle_dismiss,
+					  false);
+    } catch (err) {
+    }
     remindDismiss.addEventListener("click", handle_dismiss, false);
     remindermsg.st.color.onAir.fg = "white";
     // "gray" does not provide enough contrast from "white"
+    // so much to my chagrin, I'll use hex color description
     remindermsg.st.color.onAir.blink.fg = "#404040";
+    remindermsg.st.color.onAir.blink.millis = 3000;
     Object.defineProperty(remindermsg,
 			  "txt",
 			  {
@@ -471,6 +560,8 @@ function ST_init(argv) {
 			      get: get_reminder,
 			      set: set_reminder
 			  });
+
+    remindermsg.txt = "";
 
     showBeginMs = showBegin.getTime();
     showEnd = showBeginMs + showLen * 1000;
@@ -487,14 +578,16 @@ function ST_init(argv) {
     add_events(showBeginMs, "e");
 
     brk = load_breaks("techguy_breaks");
+
     // so should we refuse to do anything if breaks didn't load?  For
     // this stage though, if the breaks loaded successfully, for our
     // purposes here, milliseconds since the Unix epoch are more
     // useful than the seconds which have been recorded.  This is
     // therefore the show beginning plus the offsets in brk[].
+
     if ( brk ) {
 	
-	var bb, be;
+	var bb, be; // break begin, break end
 
 	l = brk.length;
 	for ( i = 0; i < l; i++ ) {
@@ -508,11 +601,16 @@ function ST_init(argv) {
 	}
     }
 
+    // Similar to show begin, the show end is like entering a
+    // break...just a SUPER long one of at least 21 hours
     add_events(showEnd, "b");
+
     l = etab.length;
+    // corrrect the type of the very last event from add_events()
     etab[l - 1].state = SHOW_DONE;
+
     // The last state is really before the next show, but
-    // this last state is simpler.
+    // a last state of "show done" is simpler.
 
     unixnow = now.getTime() + showRef.st.offFromReal * 1000;
 
@@ -547,13 +645,11 @@ function ST_init(argv) {
 
     stateful_chg_color(tmtilbreak);
 
-    // think this upd is done in slow tick() anyway. Times were that
-    // this was not the case, but it was added later
-    // tmupd(nxtbreaktm);
+    tmupd(nxtbreaktm);
+
+    prepare_reminders();
 
     sync2ToS();
-
-    tmupd(nxtbreaktm);
 
     dbg(0, "leaving ST_init");
 
@@ -680,7 +776,29 @@ function tmupd(blk) {
     dbg(-1,"tmupd done");
 }
 
+function clr_all_blink() {
+
+    // cancel all blinking on all tmobj[] objects
+
+    var o;
+    var i;
+    for ( i in tmobj ) {
+	o = tmobj[i];
+	dbg(1, "stopping obj "+o);
+	for ( var c in o.st.color ) {
+	    dbg(1, "   stopping blink for color class "+c);
+	    if ( c !== "currentColor" &&
+		 c !== "parent" ) {
+		var bstop = o.st.color[c];
+		dbg(1, "stop blink on "+bstop+" which is "+c);
+		endBlink(bstop);
+	    }
+	}
+    }
+}
+
 function begin_stop_within_tick(currTime) {
+
     // This gets called from an appropriate place within slow tick()
     // when something has set the "stopping" Boolean to true.  It
     // essentially shuts everything down by clearing the tick then
@@ -691,26 +809,14 @@ function begin_stop_within_tick(currTime) {
     window.clearInterval(slowTickerObj);
     slowTickerObj = null;
     tmupd(timenow, currTime);
-    var o;
-    var i;
-    for ( i in tmobj ) {
-	o = tmobj[i];
-	dbg(1, "stopping obj "+o);
-	for ( var c in o.st.color ) {
-	    dbg(1, "   stopping color "+c);
-	    if ( c !== "currentColor" &&
-		 c !== "parent" ) {
-		var bstop = o.st.color[c];
-		dbg(1, "stop blink on "+bstop+" which is "+c);
-		endBlink(bstop);
-	    }
-	}
-    }
+    clr_all_blink();
     var but = document.getElementById("stopST");
     but.removeEventListener("click", stopST, false);
     but.textContent = "Stopped.";
     chg_color(timenow, "red");
     chg_color(tmtilbreak, "red");
+    tmtilbreak.st.dtobj.setSeconds(0);
+    tmupd(tmtilbreak);
     document.body.style.background = "rgb(40,0,0)";
     console.log("***+++*** Shutdown @ "+
 		currTime.toString()+
@@ -809,6 +915,16 @@ function slow_tick(tol) {
     tmupd(otatime);
 
     unixms = showRef.st.dtobj.getTime();
+
+    if ( // there are reminders left...
+	    remind.length > 0 &&
+	    // ...and there isn't one being displayed...
+	    remindermsg.txt === "" &&
+	    // ..and it's at or past time to display one:
+	    unixms >= remind[0].when ) {
+	remindermsg.txt = remind[0].txt;
+    }
+    
     dbg(1, "   deciding at "+etabidx+": "+unixms);
     dbg(1, "                  "+etab[etabidx].when);
     if ( unixms >= etab[etabidx].when ) {
@@ -864,6 +980,7 @@ function slow_tick(tol) {
 	    beginBlink(tmtilbreak.st.color.onAir);
 	} else if ( newState === ON_AIR ) {
 	    endBlink(tmtilbreak.st.color.onAir);
+	    stateful_chg_color(timenow);
 	}
 
 	etabidx++;

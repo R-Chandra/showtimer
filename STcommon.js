@@ -95,6 +95,42 @@ function zeropad(num, places) {
 
 var brk = [];  // the list of breaks
 
+var remind = []; // list of reminders
+
+function load_reminders(profname) {
+
+    // Load the reminders list from the localStorage key named
+    // "profname" and return it.  If the "profname" profile is not in
+    // localStorage, see if "defaultremind" exists and prompt the user
+    // to return that instead.
+
+    // This is functionally equivalent to loading breaks (scrounge
+    // around localStorage, JSON.parse() what's found), just with a
+    // "reminders" instead of "breaks" suffix, and with a different
+    // array destination, basically.  So reuse try_load_breaks()
+    //
+    // ******** D A N G E R **********
+    //
+    // If that routine changes, we'll have to do something else.
+
+    var remindtab = try_load_breaks(profname);
+
+    if ( remindtab !== false ) {
+	return remindtab;
+    }
+
+    if ( typeof defaultremind !== "undefined" &&
+	 Array.isArray(defaultremind) ) {
+	console.warn('Tried to load reminders "'+profname+'" but that does not exist.');
+	if ( confirm('Profile "'+profname.replace(/_reminders/, "")+'" not found in localStorage, load the default list instead?') ) {
+	    return defaultremind;
+	}
+    }
+
+    return false;
+}
+
+
 function load_breaks(profname) {
 
     // Load the breaks list from the localStorage key named
@@ -144,7 +180,7 @@ function try_load_breaks(profname) {
     
     breaklist = JSON.parse(breakListStr);
     if ( ! breaklist ) {
-	console.warn("load_breaks("+profname+"): came up empty.");
+	console.warn("try_load_breaks("+profname+"): came up empty.");
 	return false;
     }
 
@@ -161,6 +197,14 @@ function try_load_breaks(profname) {
 function break_cmp(obja, objb) {
 
     // When sorting the brk array (the break descriptions), this
+    // provides the comparison function to the .sort() method.
+
+    return obja.begin - objb.begin;
+}
+
+function reminder_cmp(obja, objb) {
+
+    // When sorting the remind array (the reminder descriptions), this
     // provides the comparison function to the .sort() method.
 
     return obja.begin - objb.begin;
@@ -359,7 +403,7 @@ function find_all_profiles() {
 	k = localStorage.key(i);
 	klen = k.length;
 	dbg(1, "got key "+k+" length "+klen);
-	prof = k.replace(/_(breaks|params)(_bak[0-9]*)?$/, "");
+	prof = k.replace(/_(break|param|reminder)s(_bak[0-9]*)?$/, "");
 	if ( ! seen.includes(prof) ) {
 	    dbg(1,"*** so added from key "+k+" the profile "+prof);
 	    seen.push(prof);

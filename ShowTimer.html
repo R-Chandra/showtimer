@@ -16,27 +16,6 @@
 
       <table>
 	<tbody>
-	  <tr>
-
-	    <!-- local time of next break/event -->
-
-	    <td>
-	      <table id="nxtbreaktm" class="tdisp" data-st-type="timer">
-		<tr>
-		  <td data-st-role="hr">--</td>
-		  <td>:</td>
-		  <td data-st-role="min">--</td>
-		  <td>:</td>
-		  <td data-st-role="sec">--</td>
-		  <td>.</td>
-		  <td data-st-role="millis">---</td>
-		</tr>
-	      </table>
-	    </td>
-	    <td>
-	      <div class="timelabel">next break/segment</div>
-	    </td>
-	  </tr>
 	  <tr> <!-- hours:minuts:seconds until next break or event -->
 	    <td>
 	      <table id="tmtilbreak" class="tdisp countdown"
@@ -124,6 +103,27 @@
 	    </td>
 	  </tr>
 	  <tr>
+
+	    <!-- local time of next break/event -->
+
+	    <td>
+	      <table id="nxtbreaktm" class="tdisp" data-st-type="timer">
+		<tr>
+		  <td data-st-role="hr">--</td>
+		  <td>:</td>
+		  <td data-st-role="min">--</td>
+		  <td>:</td>
+		  <td data-st-role="sec">--</td>
+		  <td>.</td>
+		  <td data-st-role="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">next break/segment</div>
+	    </td>
+	  </tr>
+	  <tr>
 	    <td colspan="2" class="reminder">
 	      <button id="remindDismiss">dismiss</button>
 	      <!-- make this a "timer" so that we can make it blink -->
@@ -142,10 +142,13 @@
 	-->
       <br />
       <hr />
+      <div>
+	<button id="stopST">STOP!</button>
+      </div>
       <div id="stats">
-	<span>Time taken in tick handler:&nbsp;</span><span id="tickHandleTime">-</span>
-	<br />
-	<br />
+	<p>Time taken in tick handler:&nbsp;
+	  <span id="tickHandleTime">-</span>
+	</p>
       </div>
 </div>
     <div>debug level:&nbsp;
@@ -166,10 +169,14 @@
     </div> 
     
     <div>
-      <button id="stopST">STOP!</button>
+      <p>
+	<a href="ShowTimerBreakEdit.html">edit your breaks</a>
+      </p>
     </div>
     <div>
-      <a href="ShowTimerBreakEdit.html">edit your breaks</a>
+      <p>
+	<a href="ShowTimerReminderEdit.html">edit your reminders</a>
+      </p>
     </div>
     <script type="text/javascript" src="techguy.json"></script>
     <script type="text/javascript" src="STcommon.js"></script>
