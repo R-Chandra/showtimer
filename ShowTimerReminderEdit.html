@@ -1,0 +1,77 @@
+<html>
+  <head>
+    <title>reminder entry (Show Timer)</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="STcommon.css" type="text/css" />
+    <link rel="stylesheet" href="ShowTimerReminderEdit.css" type="text/css" />
+  </head>
+  <body>
+    <datalist id="profiles">
+    </datalist>
+    <div><a href="#saveall">Go to commit</a>&nbsp;
+      Profile name:&nbsp;
+      <input type="text" list="profiles" name="prof" id="prof"
+	     tabindex="1">
+      <button name="get" onclick="handle_fetch()" tabindex="2">fetch</button>
+      <input name="getbackup" type="checkbox" id="getbackup">
+      get backup instead</input>
+      <span id="fetchmsg"></span>
+    </div>
+    <hr />
+    <div id="remindproto">
+      <div class="reminderentry" data-divtype="reminderContainer">
+	<div>#<span name="remindnumdisp"></span>&nbsp;
+	  Reminder begin:
+	  <!-- <input type="time" > -->
+	  <!- unfortunately, some browsers (Chrome) drop the seconds
+	      on a time type, so will have to do text all around -->
+
+	      <input type="text" name="reminderbegin">&nbsp;
+	      <span name="beginerr"></span>
+	</div>
+	<div>Reminder local time:
+	  <span class="loctime" name="locbegin">00:00:00</span>
+	</div>
+	<div>Reminder text:
+	  <input type="text" maxsize="40" size="40" name="remindertxt">
+	</div>
+	<div class="actionButtons">
+	  <button name="save">save</button>
+	  <button name="samePlusHr">dup + 1 hr</button>
+	  <button disabled name="undo">undo</button>
+	  <button name="rm">DELETE!</button>
+	  <span name="miscmsg"></span>
+	</div>
+      </div>
+    </div>
+    <div id="reminders">
+    </div>
+    <hr />
+    <div>
+      <button name="newremind" id="newrem" onclick="ins_blank_rem()">
+	new reminder
+      </button>
+    </div>
+    <hr />
+    <div>
+      <button name="saveall" id="saveall"
+	      onclick="commit2localStorage();">commit</button>
+      <span id="commitmsg"></span>
+    </div>
+    <hr />
+    <div>export area
+      <textarea name="exp"
+		id="export" cols="80" rows="10"></textarea>
+      <div>
+	<button onclick="fill_export_area();">export</button>
+	<button onclick="slurp_export_area();">import</button>
+      </div>
+    </div>
+    <div>
+      <a href="#top">go to top of page</a>
+    </div>
+    <script type="text/javascript" src="STcommon.js" ></script>
+    <script type="text/javascript" src="ShowTimerReminderEdit.js" ></script>
+
+  </body>
+</html>

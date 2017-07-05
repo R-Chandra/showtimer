@@ -1,0 +1,68 @@
+input {
+    font-family: monospace;
+}
+
+#fetchmsg, #commitmsg {
+    color: red;
+    background: black;
+}
+
+.loctime {
+    color: yellow;
+    background: darkmagenta;
+    font-family: monospace;
+}
+
+.alteredReminder {
+    background: darkred;
+}
+
+.reminderentry {
+    border: 2px solid white;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 5px;
+}
+
+.actionButtons {
+    background: black;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    padding: 5px;
+    border: 1px dashed;
+}
+
+.undoAvail {
+    background: yellow;
+}
+
+#getbackup:checked {
+    color: red;
+    background: black;
+}
+
+/* "remindproto" is a prototype block of break entry nodes.
+Clone it recursively, optionally set its default values, and insert
+it (say, appendChild()) into the page
+*/
+
+#remindproto {
+    display: none;
+}
+
+span[name="beginerr"] {
+    color: red;
+    background: black;
+}
+
+button[name="rm"] {
+    color: black;
+    background: red;
+}
+
+#export {
+    color: black;
+    background: palegoldenrod;
+}
