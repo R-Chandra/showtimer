@@ -248,6 +248,7 @@ function stObj(parentObj) {
 }
 
 function add_events(unixms, begend) {
+
     // Every event on a high level (starting the show, going to break,
     // coming back from a break, ending the show) causes multiple
     // state changes.  This routine takes a time "unixms" (in
@@ -262,7 +263,7 @@ function add_events(unixms, begend) {
 
     // debatable here whether the timings should come from showRef
     // (wherever it points) or the timer object itself (e.g.,
-    // tmtilbreak)
+    // tmtilbreak).  We shall use showRef
 
     var soon = showRef.st.soon;
     var vsoon = showRef.st.verysoon;
@@ -272,6 +273,7 @@ function add_events(unixms, begend) {
     var lastms; // msec since the epoch of last state
     var unixsoon;
     var unixvsoon;
+    var i, prev_evt;
 
     if ( begend === "b" ) {
 	soonst = TIME_SHORT;
@@ -292,19 +294,34 @@ function add_events(unixms, begend) {
     // dbug = 0;
     unixsoon = unixms - (soon * 1000);
     unixvsoon = unixms - vsoon * 1000;
+
+    // See if there are events on the end of the event list which are
+    // before the unixsoon time.  Basically, this could be consecutive
+    // breaks, such as a typical network then local break.  Note that
+    // it's still not "exiting" to the BUMP_IN or ON_AIR states.
+
+    i = etab.length - 1;
+    while ( i >= 0 &&
+	    etab[i].when >= unixsoon ) {
+	prev_evt = etab.pop();
+	dbg(1, "discarded event "+state2str(prev_evt.state)+
+	    " at time "+prev_evt.evtTimestr);
+	i--;
+    }
+
     dbg(0, "pushing soon: "+soon+"/"+unixsoon+
 	" state "+soonst+" ("+state2str(soonst)+")");
     etab.push( { when: unixsoon,
 		 state: soonst
 		 // debugging info: human-readable time for this event
-		 , evtTimestr: new Date(unixms - soon * 1000).toTimeString()
+		 , evtTimestr: new Date(unixsoon).toString()
 	       } );
     dbg(0, "pushing very soon: "+vsoon+"/"+unixvsoon+
 	" state "+vsoonst+" ("+state2str(vsoonst)+")");
     etab.push( { when: unixvsoon,
 		 state: vsoonst
 		 // debugging info: human-readable time for this event
-		 , evtTimestr: new Date(unixms - vsoon * 1000).toTimeString()
+		 , evtTimestr: new Date(unixvsoon).toString()
 	       } );
     if ( lastst === ON_AIR ) {
 	dbg(0, "pushing bumper playing: "+unixms+" state BUMP_IN");
