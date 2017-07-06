@@ -424,15 +424,18 @@ function save_to_remind(evt) {
     remindelt = evt.target.dataroot;
     remindidx = remindelt.remindpos;
     dbg(1, ">> save req of remind["+remindidx+"]");
+    txt = remindelt.remindertxt.value;
     beg = hms2secs(remindelt.remindbegin.value);
 
     dbg(1, ">>> checking sanity");
-    if ( beg ) {
+    if ( beg && txt !== "" ) {
 	dbg(1, "Looks OK, setting");
 	remind[remindidx].begin = beg;
-	remind[remindidx].txt = remindelt.remindertxt.value;
+	remind[remindidx].txt = txt;
     } else {
-	dbg(1, "Reminder somehow unacceptable? b:"+beg);
+	dbg(1, "Reminder somehow unacceptable? b: "+beg+
+	    ', t: "'+txt+'"');
+	remindelt.miscmsg.textContent = "Reminders must be nonzero time after start and not be the null string.";
 	return false;
     }
 
