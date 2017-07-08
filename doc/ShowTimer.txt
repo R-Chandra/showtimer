@@ -62,46 +62,49 @@ seconds into the future.)
 high-level design
 =================
 
-The page displays one main table which has the time displays plus
+The page displays one main HTML table which has the time displays plus
 labels for what each time or countdown is.  Each element has a
 specific "id=" attribute in order to locate it within the page.  One
 thing to note about this is, there are complete data structures
-attached to these (HTML) elements (one object unimaginatively named
-"st" with several "sub-"objects as members).  The author tried to
-follow the idea that app-specific data attached to elements should be
-named "data-*", but as it turns out, with Web browsers at the time
-this was begun, these are of type "DOMStringMap".  Therefore, the
+attached to these nodes (one object unimaginatively named "st" with
+several "sub-"objects as members).  The author tried to follow the
+idea that app-specific data attached to elements should be named
+"data-*", but as it turns out, with Web browsers at the time this was
+begun (June 2017), these are of type "DOMStringMap".  Therefore, the
 "beautiful" and carefully constructed object was turned into the
 string "[object Object]"!  Accessing members, even through
 someid.dataset.st.something, will therefore fail miserably.
 
 A goal of this code is to have an accurate display of time, within a
 relatively tight tolerance.  A question and response on Stack Overflow
-has a GREAT suggestion about syncing time externally to the system on
-which JavaScript runs by simply having the Date object parse the Date:
-header in an HTTP(S) response.  This could be handy for syncing to at
-least the Web servers of the particular network for whom you're
-producing a real-time program (e.g. in 2017, the example I'm thinking
-of is named Premiere Networks, formerly Premiere Radio Networks, a
-subsidiary of iHeart Media, formerly named Clear Channel
-Communications).  This may change in a version later than Jun 2017,
-but this will rely on the local system's rendition of true time.  If
-this method is used, we will hand-wave top-of-second, and assume there
-is an integer number of seconds' difference between that remote Web
-server's time and the local time, thus the same top-of-second locally
-as remotely.  This is because the resolution of Date: is only one
-second.
+has a GREAT suggestion about synchronzinging (syncing) time externally
+to the system on which JavaScript runs by simply having the Date
+object parse the Date: header in an HTTP(S) response.  This could be
+handy for syncing to (at least) the Web servers of the particular
+network for whom you're producing a real-time program (e.g. in 2017,
+the example I'm thinking of is named Premiere Networks, formerly
+Premiere Radio Networks, a subsidiary of iHeart Media, formerly named
+Clear Channel Communications).  This may change in a version later
+than Jun 2017, but for now this will rely on the local system's
+rendition of true time.  If this method is used, we will hand-wave
+top-of-second, and assume there is an integer number of seconds'
+difference between that remote Web server's time and the local time,
+thus the same top-of-second locally as remotely.  This is because the
+resolution of the Date: header is only one second.  The user can
+manually adjust the program's timing offset (globalRealOff) to adjust
+for the difference between the remote system's and the local system's
+idea of timing.
 
 We can possibly get sub-second resolution of remote time.  As of the
 time this documentation was initiated, there is at least:
 
     http://www.time.gov/actualtime.cgi
 
-It has some optional parameters:
+It has some optional GET parameters:
 
     disablecache=1496679827438&__lzbc__=t2cvjw
 
-no idea what "__lzbc__" is, it would seem to be some sort of nonce
+No idea what "__lzbc__" is, it would seem to be some sort of nonce
 (basically, a pseudorandomly generated string).  "disablecache" is
 the number of microseconds since the Unix epoch.  The response XML
 looks something like:
@@ -112,6 +115,12 @@ If __lzbc__ is left off, it looks like you get an estimate of the
 number of microseconds delay between making the request and the Web
 site's response.
 
+Some explanation of what's been tried...
+========================================
+
+...so future programmers don't replicate effort on what's been tried
+before:
+
 The original idea for display updates was to do whatever updates,
 calcualtions, display changes, etc. (basically, the bulk of the work),
 sample the real time, calculate how much time remains until the next
@@ -121,14 +130,15 @@ precisely like that results in a TON of jitter.  The same basic thing
 happens with trying to use setTimeout() to wait until the
 top-of-second in order to setInterval() to implement a one second tick
 for display updating.  It seems the best one can really do is use a
-setInterval() with a relatively fast "tick" rate (say 50ms), sample
+setInterval() with a relatively fast "tick" rate (say 20ms), sample
 the time on each tick, and if the time is plus/minus the desired
 accuracy interval, either do your updates/work then, or set up your
 setInterval() at that time.
 
-So as not to be doing a syscall (such as gettimeofday(2) or
-clock_gettime(2)) every 50ms, the author tried getting the current
-time (new Date().getMilliseconds()) and using that value as a
+Since syscalls are typically a "computationally expensive" oepration,
+so as not to be doing one (such as gettimeofday(2) or
+clock_gettime(2)) every 20ms, the author tried getting the current
+time (new Date().getMilliseconds()) once and using that value as a
 "virtual" clock, and only actually doing new Date() in our "fast tick"
 when the time calculated from that virtual clock
 
@@ -137,17 +147,26 @@ when the time calculated from that virtual clock
 would be within our tolerance interval. Experimentation showed that
 every now and again, doing the maths for our top-of-second (ToS)
 sampling resulted in missing some ToSes, even with a window of two
-times plus or minus the ticking interval (so with our 50ms example,
+times plus or minus the ticking interval (so with an example of 50ms,
 100ms before through 100ms after ToS).  The only way reliability was
 achieved was by setting up a "fallback" setInterval(1000ms); initiated
-by setTimeout();, which is "ToS inaccurate" anyway. So the most sound
-strategy would seem to be to tick rapidly (e.g., every 50ms), do an
-actual new Date(); on each tick, and set a 1000ms interval near that
-discovered ToS.
+by "setTimeout();", which is "ToS inaccurate" anyway. So the most
+sound strategy would seem to be to tick rapidly (e.g., every 50ms), do
+an actual new Date(); on each tick, and set a 1000ms interval near
+that discovered ToS.
 
 What is done is to do away with the usual meaning of "tolerance" as
 "+/-" and consider just "+".  This vastly simplifies calculations and
 displays of times.
+
+To ensure the desired tolerance is kept (by default, 100ms), a counter
+is kept when the tolerance is exceeded.  It is incremented by 10 when
+the mark is overshot, and decremented every second thereafter until it
+reaches zero.  If the counter increments above 30, then the program
+assumes it needs to resync, plus the counter is reset.  This means
+that an occasional overshoot can be tolerated, but if it persists, the
+program tries to get closer to ToS so that the displayed times can be
+accurate.
 
 First, there is a variable "globalRealOff" which keeps track of the
 desired variance in milliseconds, either positive or negative, between
@@ -161,6 +180,15 @@ globalRealOff to around -180).  This is the value the internals use,
 provided by getNewDate() to centralize this.  Ordinarily, the program
 should not call new Date() (no arguments) directly for this reason;
 all "decisions" should be make with globalRealOff already applied.
+
+Since all timing is determined by this offset, if it is set to
+something other than a multiple of 1000, if that would result in the
+usual detection of ticking out of tolerance, the program will call for
+a resync to try to get back within tolerance.  For example, the
+default tolerance is 100ms, so setting the timing offset to 1500 would
+cause the detection of the time being off by somewhere between 500 and
+600 milliseconds, and will go to the fast tick to return the measured
+offset to less than 100.
 
 An as yet unimplemented use for this could be a button when
 tapped/clicked could skip to the next segment in order to time a
