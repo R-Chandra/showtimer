@@ -935,11 +935,19 @@ function slow_tick(tol) {
 
     if ( // there are reminders left...
 	    remind.length > 0 &&
-	    // ...and there isn't one being displayed...
-	    remindermsg.txt === "" &&
 	    // ..and it's at or past time to display one:
 	    unixms >= remind[0].when ) {
-	remindermsg.txt = remind[0].txt;
+	// If there isn't one being displayed...
+	if ( remindermsg.txt === "" ) {
+	    remindermsg.txt = remind[0].txt;
+	    remindDismiss.style.background = "";
+	} else {
+	    if ( remind.length > 1 &&
+		 unixms >= remind[1].when ) {
+		// visually cue the user that more are pending
+		remindDismiss.style.background = "yellow";
+	    }
+	}
     }
     
     dbg(1, "   deciding at "+etabidx+": "+unixms);
