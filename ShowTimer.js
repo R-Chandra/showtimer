@@ -207,10 +207,13 @@ function colorObj(parentObj, fg, bg, blinkfg, blinkbg, blinkmilli) {
 
 
 function stObj(parentObj) {
+
     // constructor for the "Show Timer" (st) object.
     //
     // We send in the parent node object so that we can limit the
     // scope of querySelector() to only this object
+
+    var htmlparts, i, l;
 
     var co = new Object();
     // characteristics for out of synchronization
@@ -235,11 +238,19 @@ function stObj(parentObj) {
 
     this.dtobj = new Date(0);
     this.offFromReal = null;
-    // for easy access, point to some HTML nodes
-    this.hr = parentObj.querySelector("[data-st-role=hr]");
-    this.min = parentObj.querySelector("[data-st-role=min]");
-    this.sec = parentObj.querySelector("[data-st-role=sec]");
-    this.millis = parentObj.querySelector("[data-st-role=millis]");
+
+    // for easy access, point to some HTML nodes.  It'll be easy to
+    // extend the code simply by tacking the data-st-role attribute on
+    // a node.
+    htmlparts = parentObj.querySelectorAll("[data-st-role]");
+    l = htmlparts.length;
+    for ( i = 0; i < l; i++ ) {
+	var elt = htmlparts[i];
+	var role = elt.getAttribute("data-st-role");
+	// console.log("got an element "+elt+" which has a role "+role);
+	this[role] = elt;
+    }
+
     this.millisShowing = false;
 
     this.state = 0;
@@ -328,14 +339,14 @@ function add_events(unixms, begend) {
 	etab.push( { when: unixms,
 		     state: BUMP_IN
 		     // debugging info: human-readable time for this event
-		     , evtTimestr: new Date(unixms).toTimeString()
+		     , evtTimestr: new Date(unixms).toString()
 		   } );
     }
     dbg(0, "pushing last state: "+lastms+" state "+state2str(lastst));
     etab.push( { when: lastms,
 		 state: lastst
 		 // debugging info: human-readable time for this event
-		 , evtTimestr: new Date(lastms).toTimeString()
+		 , evtTimestr: new Date(lastms).toString()
 	       } );
 
     // dbug = tmp;
@@ -670,6 +681,27 @@ function ST_init(argv) {
 
     dbg(0, "leaving ST_init");
 
+}
+
+function start_soon(mins = 2) {
+
+    // start up in a few minutes.  This is handy for testing, and will
+    // generally only be used (for now) from the debugging console
+
+    var now = getNewDate();
+    if ( now.getSeconds() > 30 ) {
+	mins++;
+    }
+    now.setMinutes(now.getMinutes()+mins);
+
+    // first, program may have been started after show end, and
+    // therefore the date may have been advanced to tomorrow, so
+    // return to today
+    showBegin.setDate(now.getDate());
+    showBegin.setHours(now.getHours());
+    showBegin.setMinutes(now.getMinutes());
+
+    return ST_init();
 }
 
 // timenow.innerHTML = "This worked.";
