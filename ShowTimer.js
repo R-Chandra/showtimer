@@ -1,6 +1,11 @@
 
 // alert("top.");
 
+var JSwarn;
+if ( (JSwarn = document.getElementById("JSwarn")) !== null ) {
+    JSwarn.classList.add("noJSwarn");
+}
+
 dbug = 2;
 
 var globalRealOff = 0;
