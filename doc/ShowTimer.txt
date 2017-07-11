@@ -76,27 +76,27 @@ string "[object Object]"!  Accessing members, even through
 someid.dataset.st.something, will therefore fail miserably.
 
 A goal of this code is to have an accurate display of time, within a
-relatively tight tolerance.  A question and response on Stack Overflow
-has a GREAT suggestion about synchronzinging (syncing) time externally
-to the system on which JavaScript runs by simply having the Date
-object parse the Date: header in an HTTP(S) response.  This could be
-handy for syncing to (at least) the Web servers of the particular
-network for whom you're producing a real-time program (e.g. in 2017,
-the example I'm thinking of is named Premiere Networks, formerly
-Premiere Radio Networks, a subsidiary of iHeart Media, formerly named
-Clear Channel Communications).  This may change in a version later
-than Jun 2017, but for now this will rely on the local system's
-rendition of true time.  If this method is used, we will hand-wave
-top-of-second, and assume there is an integer number of seconds'
-difference between that remote Web server's time and the local time,
-thus the same top-of-second locally as remotely.  This is because the
-resolution of the Date: header is only one second.  The user can
-manually adjust the program's timing offset (globalRealOff) to adjust
-for the difference between the remote system's and the local system's
-idea of timing.
+relatively tight tolerance.  To get a close tolerance, a question and
+response on Stack Overflow has a GREAT suggestion about
+synchronzinging (syncing) time externally to the system on which
+JavaScript runs by simply having the Date object parse the Date:
+header in an HTTP(S) response.  This could be handy for syncing to (at
+least) the Web servers of the particular network for whom you're
+producing a real-time program (e.g. in 2017, the example I'm thinking
+of is named Premiere Networks, formerly Premiere Radio Networks, a
+subsidiary of iHeart Media, formerly named Clear Channel
+Communications).  This may change in a version later than Jun 2017,
+but for now this will rely on the local system's rendition of true
+time.  If this method is used, we will hand-wave top-of-second, and
+assume there is an integer number of seconds' difference between that
+remote Web server's time and the local time, thus the same
+top-of-second locally as remotely.  This is because the resolution of
+the Date: header is only one second.  The user can manually adjust the
+program's timing offset (globalRealOff) to adjust for the difference
+between the remote system's and the local system's idea of timing.
 
 We can possibly get sub-second resolution of remote time.  As of the
-time this documentation was initiated, there is at least:
+time this documentation was initially written, there is at least:
 
     http://www.time.gov/actualtime.cgi
 
@@ -104,10 +104,10 @@ It has some optional GET parameters:
 
     disablecache=1496679827438&__lzbc__=t2cvjw
 
-No idea what "__lzbc__" is, it would seem to be some sort of nonce
-(basically, a pseudorandomly generated string).  "disablecache" is
-the number of microseconds since the Unix epoch.  The response XML
-looks something like:
+The author has no idea what "__lzbc__" is, it would seem to be some
+sort of nonce (basically, a pseudorandomly generated string).
+"disablecache" seems to be the number of microseconds since the Unix
+epoch.  The response XML looks something like:
 
     <timestamp time="1496679827854493" delay="1495183148027055"/>
 
@@ -174,12 +174,13 @@ new Date() and the program's concept of real time.  This is intended
 to account for not only any difference between the system's time and
 the desired timebase (for example the system clock is, say, 3 seconds
 too slow), but also the "phase angle" of when stuff gets done (for
-example if updates every second take, say, 200 ms to process, we can
-have our tick somewhere around 180 ms BEFORE ToS by setting
-globalRealOff to around -180).  This is the value the internals use,
-provided by getNewDate() to centralize this.  Ordinarily, the program
-should not call new Date() (no arguments) directly for this reason;
-all "decisions" should be make with globalRealOff already applied.
+example if updates every second take, say hypothetically, 200 ms to
+process, we can have our tick somewhere around 180 ms BEFORE ToS by
+setting globalRealOff to around -180).  This is the value the
+internals use, provided by getNewDate() to centralize this.
+Ordinarily, the program should not call new Date() (no arguments)
+directly for this reason; all "decisions" should be make with
+globalRealOff already applied, and getNewDate() does this for you.
 
 Since all timing is determined by this offset, if it is set to
 something other than a multiple of 1000, if that would result in the
@@ -187,8 +188,8 @@ usual detection of ticking out of tolerance, the program will call for
 a resync to try to get back within tolerance.  For example, the
 default tolerance is 100ms, so setting the timing offset to 1500 would
 cause the detection of the time being off by somewhere between 500 and
-600 milliseconds, and will go to the fast tick to return the measured
-offset to less than 100.
+600 milliseconds, and will go to the fast 20ms tick to return the
+measured offset to less than 100.
 
 An as yet unimplemented use for this could be a button when
 tapped/clicked could skip to the next segment in order to time a
@@ -198,12 +199,229 @@ Next, there is also the variable "dispoff", the display offset in
 milliseconds (also can be positive or negative).  This is different
 from globalRealOff, in that it really affects only the DISPLAY of
 information, not the information itself.  In other words, again, the
-timing of what's displayed is with globalRealOff applied but what is
+timing of display updates is with globalRealOff applied but what is
 actually seen on the page is influenced by dispoff.  As an example,
 there is an approximately 10 second buffer for the TWiT audio-only
 live stream, so to sync with what's heard, dispoff can be set to 10000
-to shift the display forward 10 seconds.  Again, as an example, the
-show starts at 14:05:20 Eastern (40 seconds before OTA time of
-14:06:00), but the audio for the show start won't be HEARD until
-14:05:30.
+to shift the displayed numbers forward 10 seconds.  Again, as an
+example, the show starts at 14:05:20 Eastern (40 seconds before OTA
+time of 14:06:00), but the audio for the show start won't be HEARD
+until 14:05:30.  However, globalRealOffset is still likely better (a
+value of -10000), because then the color and blinking changes, not
+just the numbers, occur sync'ed with the audio.
 
+The "st" object
+===============
+
+An object called "st" gets attached to every HTML node which has an
+attribute called "data-st-type" set to "timer".  The "id" attribute is
+used as the variable name in the program.  For example:
+
+<div id="utc" data-st-type="timer">...</div>
+
+...would create a variable named "utc" which points to that <div> node
+(utc = document.getElementById("utc");).  Therefore something like
+utc.style.background = "white"; would turn the background color of
+that div to white.  The st object gets attached to that, so you'd have
+utc.st to hold additional data associated with that timer.
+
+Each node with an st object attached to it is required/expected to
+have descendant nodes with an attribute "data-st-role" whose value is
+hr, min, sec, and millis.  All four of these should be present.  This
+is used to take a time value, break it down into hours, minutes,
+seconds, and milliseconds and put the text of those numbers at
+hr.textContent, min.textContent, etc.  These subfields do not
+necessarily need to be direct children; for example the node mentioned
+above is a <table id="utc"...> where the hr et al nodes are <td>s,
+that is to say, they're "grandchildren" (could be great grandchildren
+if <tbody> were used).
+
+To facilitate either showing or not showing milliseconds, each st has
+a Boolean property millisShowing.
+
+Each st has a date/time object (an instance of Date()) called "dtobj".
+Its value is updated in the slow tick handler by the number of seconds
+in the offFromReal property, which could be negative.  The time thus
+calculated for the dtobj property is relative to the time in
+timenow.st.dtobj, that is to say, the computer's local time offset by
+globalRealOff.  As an example, the Date object utc.st.dtobj for a
+computer in the US/Eastern timezone during daylight saving time will
+have 14400 seconds (four hours) added, or more precisely 14400000
+milliseconds (because the base time unit for Date() is milliseconds).
+The offset for this particular dtobj is calculated automatically in
+ST_init() because there is Date().getTimezoneOffset().
+
+The three "primary" timers are called timenow, utc, and otatime.
+
+As of this writing, otatime.st.offFromReal is set from a variable
+OTAoff, which is set to 40. This is because something said "now" is
+held in (digital?) delay for 40 seconds before it reaches The Tech Guy
+affiliates.  This delay is primarily so that questionable audio can be
+blocked ("dumped") from going out on the entire Premiere network, as
+is typical of live talk radio.
+
+The decision of when to make changes (such as change colors of what's
+displayed) is based on the variable "showRef" (show reference), which
+is expected to be set to timenow, utc, or otatime (defaults to
+otatime).
+
+To facilitate locating the HTML node, st has a "parent" property.  So
+for example, if a function is passed just a particular st object
+(let's call it "showtim"), it could change the text color of the
+associated HTML element to red with showtim.parent.style.color =
+"red";.
+
+There is a general purpose integer st property called "state" which
+gets initialized to 0 (in ST_init()).
+
+There are integer properties soon, verysoon, and bumplen which are in
+numbers of seconds.  soon is used to change the display appearance
+that many seconds before a break, and defaults to 60.  verysoon
+likewise changes display appearance, intended to indicate even more
+urgency, by default 30 seconds (which is generally when The Tech Guy
+liners at the end of a segment begin playing).  When breaks are over,
+bumper music starts playing, but the host does not begin speaking for
+bumplen seconds.  Some affiliates use this time for playing station
+promos with the bumper as a bed, which is why the host should not be
+speaking (this is implied in the Premiere time charts).  The display
+thus changes subtly to indicate the program is techincally on the air,
+but is supposed to be just bumper music.
+
+Finally, there is the st.color object, which we shall describe next.
+
+The color object
+================
+
+Each st object has a child color object which consists of several
+children, mostly describing the colors the HTML node should have in
+various states.  These are oos (out of sync), onAir, soon, and
+verysoon.  For convenience, there is also revertCSS, whose colors are
+all the empty string so that if the strings are used, the colors seen
+will be those dictated by CSS style sheets.  To keep track of state,
+the property currentColor points to one of these.
+
+There is also the parent property which points to the st object
+containing this color object.
+
+Each of these state-oriented members has properties fg and bg which
+are strings used for style.color (fg) and style.background (bg).
+Additionally, there is a child object called "blink" which is used to
+cause the appearance of blinking.
+
+Each blink object in turn has fg and bg members.  So for example at
+very soon time, the display alternates between verysoon.fg = "red"
+verysoon.bg = "black" and verysoon.blink.fg = "black"
+verysoon.blink.bg = "red" to give the blinking effect of alternating
+between normal and inverse video.  The state, whether the base colors
+or the blink colors should be used, is held in blink.state (values in
+the code of BLINK_BLINK and BLINK_NORM).  The member blink.timer holds
+the value returned by setInterval(), or null if there is no blinking
+in progress.  This is so clearInterval(blink.timer) can be called.
+Web documentation generally describes this as some opaque type but in
+practice the values the author has seen (Firefox) are integers (much
+like Unix file descriptors are integers).  The half-period of blinking
+(the milliseconds argument to setInterval()) is in the "millis"
+member.  So for example if you want a 1 Hz blinking rate, set
+blink.millis to 500.
+
+showBegin, showLen, and showEnd
+===============================
+
+These global variables describe when the show goes on the air, and
+when the show is over, respectively.  They are both rendered with the
+computer's local time.  showBegin is a Date() object, and for now is
+fixed at setHours(14) and setMinutes(6), then the Hours() is adjusted
+for timezone based on getTimezoneOffset().  showLen is an offset in
+seconds from showBegin, which for now is fixed at
+
+16:57:50 (ET Tech Guy end) - 14:06:00 (begin) = 10310 seconds
+
+showEnd is calculated from showBegin and showLen, and is number of
+milliseconds since the epoch.  That is to say, the show ends when
+
+new Date().getTime() + globalRealOff >= showEnd
+
+If the current time when the program is started is after the show, it
+is assumed the show beginning is tomorrow, so conceptually does:
+showBegin.setDate(showBegin.getDate() + 1), which is true at say
+17:00:00 ET on Saturday (the next Tech Guy is on Sunday).  This of
+course would be inaccurate any other day.
+
+The brk[] array
+===============
+
+The array called brk is used to describe the breaks during the show.
+Each array member is an object with members of .begin and .end.
+.begin and .end are offsets in seconds after showBegin.  This makes
+sense for timing other shows which span midnight, as the dates for
+show begin and show end would be different, as well as a typical
+top-of-the-hour break usually spanning midnight as well.
+
+The etab[] array
+================
+
+"etab" stands for "event table" and is precomputed in ST_init() from
+showBegin, each brk[] entry, and showEnd to minimize calculations
+which need to be done during the slow tick.  The two primary members
+are "when" and "state". when is in number of milliseconds since the
+Unix epoch (the return value of new Date().getTime() adjusted by
+globalRealOff). state is the numeric state the show will be in at
+"when" time.  The general progression of states goes from before show,
+to bump soon, to bump very soon, to bump in, to on the air, to time
+short, to time very short, to in break.  It generally repeats this
+pattern starting at bump soon (coming back from the break soon) and so
+on until the final two states of time very short and show end.
+
+It is permitted however to have two consecutive (adjacent) breaks, so
+it is possible to see time short, time very short, in break, time
+short, time very short, in break, bump soon, etc.  This was
+accommodated for time charts which specify network and local breaks.
+The show host may not use this, and may elect to have just one break
+listed covering both network and local, but this might be handy for
+the boardop.  The countdown time displayed is the time to the next
+segment, so the user may see a "soon" color change with more than 60
+seconds shown, and likewise "very soon" blinking with more than 30
+seconds showing.  That is how the user can distinguish such
+consecutive breaks from singular ones.
+
+The reminder system
+===================
+
+There are other timed events which the host may wish to be reminded
+of, such as calling regular guests via Skype for a segment to be
+airing soon, or for billboards or live reads.
+
+A timer area is set up for this so that the reminder text may be
+slowly changed in appearance by the blink mechanism, for example
+between white and gray text.
+
+The reminders themselves are stored in localStorage similar to the
+breaks list, except as a number-of-seconds-after-showBegin offset,
+.begin, and the reminder text, .txt.  This gets taken in from
+localStorage as remindList, and the remind[] array is precomputed
+similar to how the etab[] array is computed from the brk[] array.
+
+The difference is that the display is changed for breaks independently
+of reminders, and reminders are sticky until dismissed.  This behavior
+corresponds to needing to do a live read during a segment, but for
+continuity's sake staying with a caller in that segment.  This will
+basically remind the host until the actual spot is performed, at which
+time they may click/tap the dismiss button.
+
+As a reminder that there is more than one current reminder queued up,
+the background of the dismiss button will turn yellow as a caution to
+indicate there is at least one more reminder which is currently
+pending display.  At this time, there is no facility for peeking at
+reminders beyond the one being displayed, and to see more/the next
+reminder, the current one must be dismissed.
+
+If the program is started mid-show, it is assumed that any reminders
+in the list which are in the past have been heeded/dispatched.  So for
+example there would typically be a reminder for about 50 miutes
+
+The remind[] array is different in that it is built with .push() and
+consumed with .shift(), meaning once a reminder is dismissed, it's
+truly gone from the program.  In contrast, the etab[] is only
+referenced by the etabidx index so it is theoretically possible to
+reset the show backwards for breaks, but the reminders are always
+consumed, never to return for the current run of the program.
