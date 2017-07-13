@@ -194,6 +194,7 @@ function upd_local(evt) {
 
     blk = evt.target.dataroot;
     beg = hms2secs(blk.brkbegin.value);
+    blk.brkbegin.value = secs2hmsStr(beg);
     blk.locbegin.textContent = secs2hmsStr(beg + showBegin);
 }
 
@@ -532,6 +533,7 @@ function calc_end(evt) {
 	dbg(1, "   chose to calc with time string, brk len "+len);
 	if ( chkBrkLen(brkelt, len) ) {
 	    brkelt.brklensecs.value = len;
+	    brkelt.brklentime.value = secs2minsec(len);
 	    dbg(1, "  set seconds too");
 	} else {
 	    return false;
