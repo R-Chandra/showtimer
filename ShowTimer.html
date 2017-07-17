@@ -22,6 +22,18 @@
 
       <table>
 	<tbody>
+	  <tr>  <!-- area to put up reminders -->
+	    <td colspan="2" class="reminder">
+	      <button id="remindDismiss">dismiss</button>
+	      <!-- make this a "timer" so that we can make it blink -->
+	      <span id="remindermsg" data-st-type="timer">
+		<span data-st-role="hr"></span>
+		<span data-st-role="min"></span>
+		<span data-st-role="sec"></span>
+		<span data-st-role="millis"></span>
+	      </span>
+	    </td>
+	  </tr>
 	  <tr> <!-- hours:minuts:seconds until next break or event -->
 	    <td>
 	      <table id="tmtilbreak" class="tdisp countdown"
@@ -46,12 +58,11 @@
 	    </td>
 	  </tr>
 	  <tr>
+
+	    <!-- local time of next break/event -->
+
 	    <td>
-
-	      <!-- UTC real time clock (RTC) -->
-
-	      <table id="utc" class="mainclock tdisp wallclock"
-		     data-st-type="timer">
+	      <table id="nxtbreaktm" class="tdisp" data-st-type="timer">
 		<tr>
 		  <td data-st-role="hr">--</td>
 		  <td>:</td>
@@ -64,29 +75,10 @@
 	      </table>
 	    </td>
 	    <td>
-	      <div class="timelabel">UTC</div>
-	    </td>
-	  <tr>
-
-	    <!-- display of local time -->
-
-	    <td>
-	      <table id="timenow" class="mainclock tdisp" data-st-type="timer">
-		<tr>
-		  <td data-st-role="hr">--</td>
-		  <td>:</td>
-		  <td data-st-role="min">--</td>
-		  <td>:</td>
-		  <td data-st-role="sec">--</td>
-		  <td>.</td>
-		  <td data-st-role="millis">---</td>
-		</tr>
-	      </table>
-	    </td>
-	    <td>
-	      <div class="timelabel">local time</div>
+	      <div class="timelabel">next break/segment</div>
 	    </td>
 	  </tr>
+	  
 	  <tr>
 
 	    <!-- display of over the air (OTA) time -->
@@ -110,10 +102,10 @@
 	  </tr>
 	  <tr>
 
-	    <!-- local time of next break/event -->
+	    <!-- display of local time -->
 
 	    <td>
-	      <table id="nxtbreaktm" class="tdisp" data-st-type="timer">
+	      <table id="timenow" class="mainclock tdisp" data-st-type="timer">
 		<tr>
 		  <td data-st-role="hr">--</td>
 		  <td>:</td>
@@ -126,19 +118,29 @@
 	      </table>
 	    </td>
 	    <td>
-	      <div class="timelabel">next break/segment</div>
+	      <div class="timelabel">local time</div>
 	    </td>
 	  </tr>
 	  <tr>
-	    <td colspan="2" class="reminder">
-	      <button id="remindDismiss">dismiss</button>
-	      <!-- make this a "timer" so that we can make it blink -->
-	      <span id="remindermsg" data-st-type="timer">
-		<span data-st-role="hr"></span>
-		<span data-st-role="min"></span>
-		<span data-st-role="sec"></span>
-		<span data-st-role="millis"></span>
-	      </span>
+	    <td>
+
+	      <!-- UTC real time clock (RTC) -->
+
+	      <table id="utc" class="mainclock tdisp wallclock"
+		     data-st-type="timer">
+		<tr>
+		  <td data-st-role="hr">--</td>
+		  <td>:</td>
+		  <td data-st-role="min">--</td>
+		  <td>:</td>
+		  <td data-st-role="sec">--</td>
+		  <td>.</td>
+		  <td data-st-role="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">UTC</div>
 	    </td>
 	  </tr>
 	</tbody>
