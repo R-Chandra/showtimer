@@ -394,8 +394,8 @@ function find_all_profiles() {
     }
 
     // empty out any existing options
-    while ( (opt = profiles.firstChild) !== null ) {
-	profiles.removeChild(opt);
+    while ( (opt = profblk.firstChild) !== null ) {
+	profblk.removeChild(opt);
     }
 
     l = localStorage.length;
