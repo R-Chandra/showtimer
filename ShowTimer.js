@@ -44,6 +44,7 @@ var showEnd;  // calculated show end in milliseconds (compare with .getTime())
 showLen = 10310;
 var etab = new Array(); // event table
 var etabidx; // current index into etab; advanced when time > etab[].when
+var stopBut; // pointer to the stop button
 
 // timing objects
 var tmobj = new Array();
@@ -528,6 +529,7 @@ function ST_init(argv) {
 
     // likewise change the label on the stop button
     o = document.getElementById("stopST");
+    stopBut = o;
     try {
 	o.removeEventListener("click", stopST, false);
     } catch (err) {
