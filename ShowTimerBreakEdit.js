@@ -5,7 +5,7 @@ var localOff = get_show_start_hour_offset();
 
 showBegin += (localOff * 60);
 
-dbug = 3;
+dbug = 1;
 
 var profinp = document.getElementById("prof");
 var currprof;
@@ -48,6 +48,7 @@ function slurp_export_area() {
     // doing."
 
     var xarea = exparea.value;
+    var newbrk;
 
     if ( xarea.length < 2 ) {
 	alert("doesn't look like there's anything to import.");
@@ -57,12 +58,20 @@ function slurp_export_area() {
     xarea = xarea.replace(/^[ 	]*var[ 	]*defaultbrk[ 	]*=[ 	]*/, "");
     // alert("you have: >"+xarea+"<");
 
+    try {
+	newbrk = JSON.parse(xarea);
+    } catch (err) {
+	alert("There was an error ("+err+") trying to import that.");
+	return false;
+    }
+
     if ( brk.length > 0 ) {
 	if ( ! confirm("Overwrite current breaks list?") ) {
 	    return false;
 	}
     }
-    brk = JSON.parse(xarea);
+
+    brk = newbrk;
     refresh_breaks();
 }
 
@@ -135,7 +144,7 @@ function commit2localStorage(clickevt) {
     commitmsg.style.color = "white";
     commitmsg.textContent = 'Profile "'+profname+'" saved to localStorage.';
     // This could have created a new profile, so update the list
-    find_all_profiles();
+    find_all_profiles(proflist);
     clear_msg_after_delay(commitmsg);
 }
 
@@ -673,4 +682,4 @@ function handle_fetch(evt) {
 }
 
 
-find_all_profiles();
+find_all_profiles(proflist);

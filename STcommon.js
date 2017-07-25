@@ -366,10 +366,10 @@ function st2col(st) {
     }
 }
 
-function find_all_profiles() {
+function find_all_profiles(profs) {
 
     // finds all the profiles in localStorage and inserts <option>
-    // elements into the node with an ID of "profiles" (expected to be
+    // elements into the node at "profs" (expected to be
     // a <datalist> element)
 
     var i, l, k;
@@ -378,11 +378,13 @@ function find_all_profiles() {
     var optproto = document.createElement("option");
     var opt;
     var profblk;
+    var ptype; // profile type string ("breaks", "reminders", etc.)
+    var ptre;  // profile type regular expression
 
-    var brksidx, klen;
+    var kidx, klen;
 
-    if ( typeof profiles !== "undefined" ) {
-	profblk = profiles;
+    if ( typeof profs !== "undefined" ) {
+	profblk = profs;
     } else {
 	if ( (profblk = document.getElementById("profiles")) === null ) {
 	    // If one isn't in the document already, provide one.
@@ -398,6 +400,12 @@ function find_all_profiles() {
 	profblk.removeChild(opt);
     }
 
+    if ( (ptype = profblk.getAttribute("data-st-proftype")) === null ) {
+	ptype = "breaks";
+    }
+
+    ptre = new RegExp("_"+ptype+"(_bak[0-9]*)?$");
+
     l = localStorage.length;
     for ( i = 0; i < l; i++ ) {
 	k = localStorage.key(i);
@@ -407,9 +415,13 @@ function find_all_profiles() {
 	if ( ! seen.includes(prof) ) {
 	    dbg(1,"*** so added from key "+k+" the profile "+prof);
 	    seen.push(prof);
-	    opt = optproto.cloneNode(false);
-	    opt.textContent = prof;
-	    profblk.appendChild(opt);
+	    // now filter out whether it's the type for this datalist
+	    if ( k.search(ptre) !== -1 ) {
+		dbg(1, "+++ including prof "+prof+", key "+k);
+		opt = optproto.cloneNode(false);
+		opt.textContent = prof;
+		profblk.appendChild(opt);
+	    }
 	}
     }
 }

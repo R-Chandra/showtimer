@@ -134,7 +134,7 @@ function commit2localStorage(clickevt) {
     commitmsg.style.color = "white";
     commitmsg.textContent = 'Profile "'+profname+'" saved to localStorage.';
     // This could have created a new profile, so update the list
-    find_all_profiles();
+    find_all_profiles(proflist);
     clear_msg_after_delay(commitmsg);
 }
 
@@ -572,4 +572,4 @@ function handle_fetch(evt) {
 }
 
 
-find_all_profiles();
+find_all_profiles(proflist);

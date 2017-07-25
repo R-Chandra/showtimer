@@ -22,7 +22,8 @@
 
       <table>
 	<tbody>
-	  <tr>  <!-- area to put up reminders -->
+	  <tr title="Reminders will appear here according to the times entered for them, along with a button to dismiss them.">
+	    <!-- area to put up reminders -->
 	    <td colspan="2" class="reminder">
 	      <button id="remindDismiss">dismiss</button>
 	      <!-- make this a "timer" so that we can make it blink -->
@@ -37,7 +38,8 @@
 	  <tr> <!-- hours:minuts:seconds until next break or event -->
 	    <td>
 	      <table id="tmtilbreak" class="tdisp countdown"
-		     data-st-type="timer">
+		     data-st-type="timer"
+		     title="This is a countdown timer until the next break or segment.">
 		<tr><td data-st-role="hr">--</td>
 		  <td>:</td>
 		  <td data-st-role="min">--</td>
@@ -153,12 +155,28 @@
       <div>
 	<button id="stopST">STOP!</button>
       </div>
+      <div>
+	Profile name for general parameters:
+	<input type="text" name="genParamsProf" id="genParamsProf" size="15">
+	<button id="genParamsLoad">load params</button>
+      </div>
+      <div>
+	Profile name for breaks:
+	<input type="text" name="brkProf" id="brkProf" size="15">
+	<button id="brkLoad">load breaks</button>
+      </div>
+      <div>
+	Profile name for reminders:
+	<input type="text" name="remindProf" id="remindProf" size="15">
+	<button id="remindLoad">load reminders</button>
+      </div>
+      <hr />
       <div id="stats">
 	<p>Time taken in tick handler:&nbsp;
 	  <span id="tickHandleTime">-</span>
 	</p>
       </div>
-</div>
+    </div>
     <div>debug level:&nbsp;
 	<input onchange="updDbg(dbgChanger.value);" id="dbgChanger"
 	     name="dbglvl"
