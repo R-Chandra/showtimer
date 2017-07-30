@@ -5,15 +5,15 @@ shows (warnings for ad breaks)
 
 # "Quick start" guide
 
-Load ShowTimer.html into your HTML5 browser (tested with Firefox 54.0
-and Chrome 59.0.3071.115 on Ubuntu 64-bit, as well as Chrome and
-Dolphin on a Nexus 7 running Android 4.4.4). Be sure to allow
-JavaScript (e.g. if NoScript or similar is in use).  A known issue for
-Chrome and possibly other browsers (not Firefox) is that access to
-localStorage from file:/// URIs is a security violation.  If these
-files are served off an HTTP server instead (for example, webfs),
-Chrome is not known to have that issue.  More explanation on operation
-is later in this README.
+Load [ShowTimer.html](ShowTimer.html) into your HTML5 browser (tested
+with Firefox 54.0 and Chrome 59.0.3071.115 on Ubuntu 64-bit, as well
+as Chrome and Dolphin on a Nexus 7 running Android 4.4.4). Be sure to
+allow JavaScript (e.g. if NoScript or similar is in use).  A known
+issue for Chrome and possibly other browsers (not Firefox) is that
+access to localStorage from file:/// URIs is a security violation.  If
+these files are served off an HTTP server instead (for example,
+webfs), Chrome is not known to have that issue.  More explanation on
+operation is later in this README.
 
 # the "why"
 
