@@ -1,0 +1,73 @@
+input {
+    font-family: monospace;
+}
+
+#fetchmsg, #commitmsg, span[name="calcErr"] {
+    color: red;
+    background: black;
+}
+
+.loctime {
+    color: yellow;
+    background: darkmagenta;
+    font-family: monospace;
+}
+
+.alteredBreak {
+    background: darkred;
+}
+
+.breakentry {
+    border: 2px solid white;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 5px;
+}
+
+.actionButtons {
+    background: black;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    padding: 5px;
+    border: 1px dashed;
+}
+
+.undoAvail {
+    background: yellow;
+}
+
+input[type="number"]:invalid {
+    color: yellow;
+    background: red;
+}
+
+#getbackup:checked {
+    color: red;
+    background: black;
+}
+
+/* "breakproto" is a prototype block of break entry nodes.
+Clone it recursively, optionally set its default values, and insert
+it (say, appendChild()) into the page
+*/
+
+#breakproto {
+    display: none;
+}
+
+span[name="beginerr"] {
+    color: red;
+    background: black;
+}
+
+button[name="rm"] {
+    color: black;
+    background: red;
+}
+
+#export {
+    color: black;
+    background: palegoldenrod;
+}

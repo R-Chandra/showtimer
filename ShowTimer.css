@@ -1,0 +1,135 @@
+
+/* the default is not to show milliseconds in displays */
+[data-st-role=millis] {
+    visibility: hidden;
+}
+
+/* This was to demonstrate having the individual components of
+    a displayed time have different colors */
+/* span[data-STrole=hr], span[data-STrole=min], span[data-STrole=sec] {
+    color: gray;
+}
+
+span[data-STrole=min] {
+    color: cyan;
+}
+
+span[data-STrole=sec] {
+    color: yellow;
+}
+*/
+
+/* This was to show "subtables" with a white border */
+/* 
+td {
+    border: 3px white solid;
+}
+*/
+
+.tdisp {
+    border: none;
+    margin-right:0;
+    margin-left: auto;
+    font-family: monospace;
+}
+
+/* The JS code ensures that there are no milliseconds kept 
+     track of in the main countdown timer, so there is no
+     reason it needs to be displayed.  But code relies on
+     ALL timing objects to have a "millis" member, so it
+     has to be present.  Just make it invisible.
+*/
+
+#tmtilbreak [data-st-role="millis"],
+#tmtilbreak td:nth-child(6){
+    display: none;
+}
+
+#nxtbreaktm {
+    font-size: x-large;
+    background: black;
+}
+
+.tdisp td {
+    /* width: 14px; */
+    margin: 0 auto;
+}
+
+
+/* just an example of how to use nth-child(), highlight the
+hours and seconds of a time <table>
+*/
+/*
+.tdisp td:nth-child(5), .tdisp td:nth-child(1) {
+    background: white;
+    color: black;
+}
+*/
+
+/* the dot between seconds and millis */
+.tdisp td:nth-child(6) {
+    visibility: hidden;
+}
+
+table {
+/*
+    margin: 0 auto;
+*/
+    border: 5px orange solid;
+}
+
+.mainclock {
+    font-size: medium;
+    font-family: monospace;
+    color: green;
+    background: black;
+}
+
+.countdown {
+    font-size: 100px;
+    font-family: monospace;
+    display: inline-block;
+    background: black;
+    color: cyan;
+}
+
+.wallclock {
+    color:green;
+}
+
+.timelabel {
+    font-size: medium;
+/*    font-family: cursive, serif, sans-serif, helvetica;
+ */
+    font-family: monospace, system-ui, Vibur, serif ;
+    color: white;
+    background: maroon;
+}
+
+.reminder {
+    font-size: xx-large;
+    color: white;
+    background: black;
+    border: 2px white solid;
+}
+
+/* We set up the reminders area as a timer object so that we can make
+it flash easily, so therefore it must have the hr, min, etc. elements
+*/
+
+#remindermsg [data-st-role] {
+    display: none;
+}
+
+#remindermsg {
+    height: 1em;
+}
+
+#remindDismiss {
+    visibility: hidden;
+    /* putting a button in that box makes it blend in with the
+	white border around the last table row, so increase margin
+     */
+    margin-bottom: 15px;
+    margin-left: 5px;
+}

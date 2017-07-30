@@ -1,0 +1,26 @@
+#JSwarn {
+    color: red;
+    background: black;
+    font-size: 2.5em;
+}
+
+.noJSwarn {
+    display: none;
+}
+
+table {
+/*
+    margin: 0 auto;
+*/
+    border: 5px orange solid;
+}
+
+body {
+    background: navy;
+    color: yellow;
+}
+
+a, a:visited {
+    color: white;
+    background: darkgreen;
+}

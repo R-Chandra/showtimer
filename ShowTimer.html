@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Show Timer</title>
+    <meta charset="UTF-8">
+<!--    <meta http-equiv="Content-Security-Policy"
+	  content="default-src *; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://hal9002.philipps.us"> -->
+    <!-- <link href="https://fonts.googleapis.com/css?family=Vibur|Mogra" rel="stylesheet"> -->
+    <link rel="stylesheet" href="STcommon.css" type="text/css" />
+    <link rel="stylesheet" href="ShowTimer.css" type="text/css" />
+    <link rel="icon" href="favicon.png" type="image/png" />
+  </head>
+  <body>
+    <div id="JSwarn">WARNING: in order for this to work, JavaScript
+    must be allowed.  If this message is visible, it likely means
+    JavaScript is not enabled/allowed (NoScript or similar?).
+    </div>
+
+    <div id="main">
+
+      <!-- main part of the screen with all the times on it -->
+
+      <table>
+	<tbody>
+	  <tr title="Reminders will appear here according to the times entered for them, along with a button to dismiss them.">
+	    <!-- area to put up reminders -->
+	    <td colspan="2" class="reminder">
+	      <button id="remindDismiss">dismiss</button>
+	      <!-- make this a "timer" so that we can make it blink -->
+	      <span id="remindermsg" data-st-type="timer">
+		<span data-st-role="hr"></span>
+		<span data-st-role="min"></span>
+		<span data-st-role="sec"></span>
+		<span data-st-role="millis"></span>
+	      </span>
+	    </td>
+	  </tr>
+	  <tr> <!-- hours:minuts:seconds until next break or event -->
+	    <td>
+	      <table id="tmtilbreak" class="tdisp countdown"
+		     data-st-type="timer"
+		     title="This is a countdown timer until the next break or segment.">
+		<tr><td data-st-role="hr">--</td>
+		  <td>:</td>
+		  <td data-st-role="min">--</td>
+		  <td>:</td>
+		  <td data-st-role="sec">--</td>
+		  <!-- This will get display: none;, but it has to
+		       follow the pattern of the rest for JavsScript -->
+		  <td>.</td>
+		  <td data-st-role="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">
+		<div>time until next</div>
+		<div>break/segment</div>
+	      </div>
+	    </td>
+	  </tr>
+	  <tr>
+
+	    <!-- local time of next break/event -->
+
+	    <td>
+	      <table id="nxtbreaktm" class="tdisp" data-st-type="timer">
+		<tr>
+		  <td data-st-role="hr">--</td>
+		  <td>:</td>
+		  <td data-st-role="min">--</td>
+		  <td>:</td>
+		  <td data-st-role="sec">--</td>
+		  <td>.</td>
+		  <td data-st-role="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">next break/segment</div>
+	    </td>
+	  </tr>
+	  
+	  <tr>
+
+	    <!-- display of over the air (OTA) time -->
+	    
+	    <td>
+	      <table id="otatime" class="mainclock tdisp" data-st-type="timer">
+		<tr>
+		  <td data-st-role="hr">--</td>
+		  <td>:</td>
+		  <td data-st-role="min">--</td>
+		  <td>:</td>
+		  <td data-st-role="sec">--</td>
+		  <td>.</td>
+		  <td data-st-role="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">OTA time</div>
+	    </td>
+	  </tr>
+	  <tr>
+
+	    <!-- display of local time -->
+
+	    <td>
+	      <table id="timenow" class="mainclock tdisp" data-st-type="timer">
+		<tr>
+		  <td data-st-role="hr">--</td>
+		  <td>:</td>
+		  <td data-st-role="min">--</td>
+		  <td>:</td>
+		  <td data-st-role="sec">--</td>
+		  <td>.</td>
+		  <td data-st-role="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">local time</div>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+
+	      <!-- UTC real time clock (RTC) -->
+
+	      <table id="utc" class="mainclock tdisp wallclock"
+		     data-st-type="timer">
+		<tr>
+		  <td data-st-role="hr">--</td>
+		  <td>:</td>
+		  <td data-st-role="min">--</td>
+		  <td>:</td>
+		  <td data-st-role="sec">--</td>
+		  <td>.</td>
+		  <td data-st-role="millis">---</td>
+		</tr>
+	      </table>
+	    </td>
+	    <td>
+	      <div class="timelabel">UTC</div>
+	    </td>
+	  </tr>
+	</tbody>
+      </table>
+      <!--		<button id="dismissMsg">dismiss</button>
+			A message for stuff
+	-->
+      <br />
+      <hr />
+      <div>
+	<button id="stopST">STOP!</button>
+      </div>
+      <div>
+	Profile name for general parameters:
+	<input type="text" name="genParamsProf" id="genParamsProf" size="15">
+	<button id="genParamsLoad">load params</button>
+      </div>
+      <div>
+	Profile name for breaks:
+	<input type="text" name="brkProf" id="brkProf" size="15">
+	<button id="brkLoad">load breaks</button>
+      </div>
+      <div>
+	Profile name for reminders:
+	<input type="text" name="remindProf" id="remindProf" size="15">
+	<button id="remindLoad">load reminders</button>
+      </div>
+      <hr />
+      <div id="stats">
+	<p>Time taken in tick handler:&nbsp;
+	  <span id="tickHandleTime">-</span>
+	</p>
+      </div>
+    </div>
+    <div>debug level:&nbsp;
+	<input onchange="updDbg(dbgChanger.value);" id="dbgChanger"
+	     name="dbglvl"
+	       type="number" value="2" /><br></br>
+	display timing fudge factor:&nbsp;<input 
+				      onchange="updFudge(fudge);"
+				      name="fudgeFact" type="number"
+				      id="fudge" />
+    </div>
+    <div>Program timing offset (globalRealOff):
+      <input name="globalOff" id="globalOff" type="number"
+	     onchange="updGlobalTiming(this.value)" />
+    </div>
+    <div><input type="checkbox" id="showms" name="MSshow" />
+      Show milliseconds
+    </div> 
+    
+    <div>
+      <p>
+	<a href="ShowTimerBreakEdit.html">edit your breaks</a>
+      </p>
+    </div>
+    <div>
+      <p>
+	<a href="ShowTimerReminderEdit.html">edit your reminders</a>
+      </p>
+    </div>
+    <script type="text/javascript" src="techguy.json"></script>
+    <script type="text/javascript" src="STcommon.js"></script>
+    <!-- <script>alert("bottom of ShowTimer.html");</script> -->
+    <script type="text/javascript" src="ShowTimer.js"></script>
+    </script>
+
+  </body>
+</html>

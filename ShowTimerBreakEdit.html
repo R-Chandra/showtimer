@@ -1,0 +1,88 @@
+<html>
+  <head>
+    <title>Show Timer break entry</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="STcommon.css" type="text/css" />
+    <link rel="stylesheet" href="ShowTimerBreakEdit.css" type="text/css" />
+  </head>
+  <body>
+    <datalist id="profiles" data-st-proftype="breaks">
+    </datalist>
+    <div><a href="#saveall">Go to commit</a>&nbsp;
+      Profile name:&nbsp;
+      <input type="text" list="profiles" name="prof" id="prof"
+	     tabindex="1">
+      <button name="get" onclick="handle_fetch()" tabindex="2">fetch</button>
+      <input name="getbackup" type="checkbox" id="getbackup">
+      get backup instead</input>
+      <span id="fetchmsg"></span>
+    </div>
+    <hr />
+    <div id="breakproto">
+      <div class="breakentry" data-divtype="breakContainer">
+	<div>#<span name="brknumdisp"></span>&nbsp;
+	  Break begin:
+	  <!-- <input type="time" name="brkbegin"> -->
+	  <!-- unfortunately, some browsers (Chrome) drop the seconds
+	      on a time type, so will have to do text all around -->
+
+	      <input type="text" name="brkbegin">&nbsp;
+	      <span name="beginerr"></span>
+	</div>
+	<div>Break local time:
+	  <span class="loctime" name="locbegin">00:00:00</span>
+	</div>
+	<div>time length:
+	  <input type="text" name="brklentime">
+	  <button name="timecalc">calc</button>
+	  seconds length:
+	  <input type="number" min="10" name="brklensecs">
+	  <button name="secscalc">calc</button>
+	</div>
+	<div>Break end:&nbsp; 
+	  <input type="text" name="brkend">&nbsp;
+	  <span name="calcErr"></span>
+	</div>
+	<div>Break end local time:
+	  <span class="loctime" name="locend">00:00:00</span>
+	</div>
+	<div class="actionButtons">
+	  <button name="save">save</button>
+	  <button name="samePlusHr">dup + 1 hr</button>
+	  <button disabled name="undo">undo</button>
+	  <button name="rm">DELETE!</button>
+	  <span name="miscmsg"></span>
+	</div>
+      </div>
+    </div>
+    <div id="breaks">
+    </div>
+    <hr />
+    <div>
+      <button name="newbrk" id="newbrk" onclick="ins_blank_brk()">
+	new break
+      </button>
+    </div>
+    <hr />
+    <div>
+      <button name="saveall" id="saveall"
+	      onclick="commit2localStorage();">commit</button>
+      <span id="commitmsg"></span>
+    </div>
+    <hr />
+    <div>export area
+      <textarea name="exp"
+		id="export" cols="80" rows="10"></textarea>
+      <div>
+	<button onclick="fill_export_area();">export</button>
+	<button onclick="slurp_export_area();">import</button>
+      </div>
+    </div>
+    <div>
+      <a href="#top">go to top of page</a>
+    </div>
+    <script type="text/javascript" src="STcommon.js" ></script>
+    <script type="text/javascript" src="ShowTimerBreakEdit.js" ></script>
+
+  </body>
+</html>
