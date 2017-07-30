@@ -871,8 +871,9 @@ function begin_stop_within_tick(currTime) {
     but.textContent = "Stopped.";
     chg_color(timenow, "red");
     chg_color(tmtilbreak, "red");
-    tmtilbreak.st.dtobj.setSeconds(0);
-    tmupd(tmtilbreak);
+    tmtilbreak.st.hr.textContent =
+	tmtilbreak.st.min.textContent =
+	tmtilbreak.st.sec.textContent = "--";
     document.body.style.background = "rgb(40,0,0)";
     console.log("***+++*** Shutdown @ "+
 		currTime.toString()+

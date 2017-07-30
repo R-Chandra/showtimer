@@ -148,8 +148,24 @@ function load_breaks(profname) {
 
     if ( typeof defaultbrk !== "undefined" &&
 	 Array.isArray(defaultbrk) ) {
+
+	var basename = profname.replace(/_breaks/, "");
+
 	console.warn('Tried to load breaks "'+profname+'" but that does not exist.');
-	if ( confirm('Profile "'+profname.replace(/_breaks/, "")+'" not found in localStorage, load the default list instead?') ) {
+	if ( confirm('Profile "'+basename+'" not found in localStorage, load the default list instead?') ) {
+
+	    var promptmsg;
+
+	    promptmsg = 'Store those breaks as "'+basename+'" for next time?';
+	    if ( confirm(promptmsg) ) {
+		try {
+		    localStorage.setItem(profname,
+					 JSON.stringify(defaultbrk));
+		} catch (e) {
+		    alert('Sorry, did not store, error "'+e+'".');
+		}
+	    }
+	    localStorage.setItem("last_used_breaks", basename);
 	    return defaultbrk;
 	}
     }
@@ -366,6 +382,12 @@ function st2col(st) {
     }
 }
 
+// Filter out the "last used" variables.  Make it easy by comparing
+// keys against an array of complete strings.
+var last_used_list = [ "last_used_breaks",
+		       "last_used_params",
+		       "last_used_reminders" ];
+
 function find_all_profiles(profs) {
 
     // finds all the profiles in localStorage and inserts <option>
@@ -401,10 +423,10 @@ function find_all_profiles(profs) {
     }
 
     if ( (ptype = profblk.getAttribute("data-st-proftype")) === null ) {
-	ptype = "breaks";
+	ptre = new RegExp("^$");
+    } else {
+	ptre = new RegExp("_"+ptype+"(_bak[0-9]*)?$");
     }
-
-    ptre = new RegExp("_"+ptype+"(_bak[0-9]*)?$");
 
     l = localStorage.length;
     for ( i = 0; i < l; i++ ) {
@@ -412,16 +434,33 @@ function find_all_profiles(profs) {
 	klen = k.length;
 	dbg(1, "got key "+k+" length "+klen);
 	prof = k.replace(/_(break|param|reminder)s(_bak[0-9]*)?$/, "");
-	if ( ! seen.includes(prof) ) {
+	if ( ! seen.includes(prof) &&
+	     ! last_used_list.includes(k) ) {
 	    dbg(1,"*** so added from key "+k+" the profile "+prof);
 	    seen.push(prof);
 	    // now filter out whether it's the type for this datalist
-	    if ( k.search(ptre) !== -1 ) {
+	    if ( ptype === null ) {
 		dbg(1, "+++ including prof "+prof+", key "+k);
 		opt = optproto.cloneNode(false);
 		opt.textContent = prof;
 		profblk.appendChild(opt);
 	    }
+	}
+    }
+
+    if ( ptype === null ) {
+	// There was no specified type of profile requested
+	return;
+    }
+
+    // now discover which profile entries have "_" plus ptype
+    l = seen.length;
+    for ( i = 0; i < l; i++ ) {
+	prof = seen[i];
+	if ( localStorage[prof + "_" + ptype] !== undefined ) {
+	    opt = optproto.cloneNode(false);
+	    opt.textContent = prof;
+	    profblk.appendChild(opt);
 	}
     }
 }
