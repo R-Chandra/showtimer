@@ -505,11 +505,7 @@ function ST_init(argv) {
     etabidx = 0;
 
     timernode = document.querySelectorAll("[data-st-type=timer]");
-    for ( o of timernode ) {
-	timername = o.getAttribute("id");
-	// unqualified variable names are properties of "window"
-	window[timername] = document.getElementById(timername);
-    }
+
     // NodeLists are only PARTIALLY arrays.  The other part is some
     // methods and other properties unsuitable for tmobj[], so we need
     // to copy the "array part" to tmobj.  Otherwise tmobj will be an
@@ -520,7 +516,11 @@ function ST_init(argv) {
     tmobj = new Array();
     l = timernode.length;
     for ( i = 0; i < l; i++ ) {
-	tmobj[i] = timernode[i];
+	o = timernode[i];
+	tmobj[i] = o;
+	timername = o.getAttribute("id");
+	// unqualified variable names are properties of "window"
+	window[timername] = o;
     }
 
     // In case someone (a developer in the debugger?) restarts the
@@ -690,10 +690,20 @@ function ST_init(argv) {
 
 }
 
-function start_soon(mins = 2) {
+function start_soon(mins) {
 
     // start up in a few minutes.  This is handy for testing, and will
     // generally only be used (for now) from the debugging console
+
+    // Sigh.  Dolphin Browser at least does not understand the JS
+    // syntax of default values for parameters
+    if ( typeof mins === "undefined" ) {
+	mins = 2;
+    } else {
+	if ( mins < 2 ) {
+	    mins = 2;
+	}
+    }
 
     var now = getNewDate();
     if ( now.getSeconds() > 30 ) {
